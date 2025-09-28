@@ -6,6 +6,10 @@ dotenv.config();
 const connectionToMongoDb = require('./database/connection')
 connectionToMongoDb();
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
+
 app.get('/', (req, res) => {
     res.send('Hello World');
 });
