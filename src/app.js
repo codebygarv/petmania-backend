@@ -6,7 +6,9 @@ dotenv.config();
 const connectionToMongoDb = require("./database/connection");
 connectionToMongoDb();
 
-const otpGenerate = require("./config/otpGenerate");
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
 const userRoutes = require("./modules/user/user.routes");
 
 app.use(express.json());

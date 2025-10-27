@@ -39,17 +39,23 @@ const userLoginController = async (req, res) => {
       email: existingUser.email,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      data: {
-        token,
-        user: {
-          id: existingUser._id,
-          email: existingUser.email,
+    res
+      .status(200)
+      .cookie("token", token, {
+        httpOnly: true, // Secure: prevents access from frontend JS
+        secure: false, // Set true in production with HTTPS
+        sameSite: "strict",
+      })
+      .json({
+        success: true,
+        message: "Login successful",
+        data: {
+          user: {
+            id: existingUser._id,
+            email: existingUser.email,
+          },
         },
-      },
-    });
+      });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
@@ -84,19 +90,50 @@ const userRegisterController = async (req, res) => {
       email: newUser.email,
     });
 
-    res.status(201).json({
+    res
+      .status(201)
+      .cookie("signupToken", token, {
+        httpOnly: true, // Secure: prevents access from frontend JS
+        secure: false, // Set true in production with HTTPS
+        sameSite: "strict",
+      })
+      .json({
+        success: true,
+        message: "User registered successfully",
+        data: {
+          token,
+          user: {
+            id: newUser._id,
+            email: newUser.email,
+          },
+        },
+      });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const userDetailsController = async (req, res) => {
+  try {
+    const email = req.email;
+    const userDetails = await user.findOne({ email: email.toLowerCase() });
+
+    res.status(200).json({
       success: true,
-      message: "User registered successfully",
+      message: "Details Fetched Successfully",
       data: {
-        token,
         user: {
-          id: newUser._id,
-          email: newUser.email,
+          id: userDetails._id,
+          email: userDetails.email,
         },
       },
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("details fetching  error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -139,7 +176,7 @@ const userForgotPasswordController = async (req, res) => {
 };
 
 const otpVerifyController = (req, res) => {
-  const { email, otp } = req.body;
+  const { otp, email } = req.body;
 
   db.get(
     `SELECT * FROM otp_store WHERE email = ? AND otp = ?`,
@@ -164,19 +201,28 @@ const otpVerifyController = (req, res) => {
       // OTP is valid → delete from DB
       db.run(`DELETE FROM otp_store WHERE email = ?`, [email]);
 
-      const tempToken = generateToken({ email, otpVerified: true }, "10m"); // valid for only 10 minutes and it's temperory 
+      const tempToken = generateToken({ email, otpVerified: true }, "10m"); // valid for only 10 minutes and it's temperory
 
-      return res.status(200).json({
-        success: true,
-        message: "OTP verified successfully",
-      });
+      return res
+        .status(200)
+        .cookie("otpToken", tempToken, {
+          httpOnly: true, // Secure: prevents access from frontend JS
+          secure: false, // Set true in production with HTTPS
+          sameSite: "strict",
+          maxAge: 5 * 60 * 1000, // 5 minute
+        })
+        .json({
+          success: true,
+          message: "OTP verified successfully",
+        });
     }
   );
 };
 
 const userForgotPasswordControllerMain = async (req, res) => {
   try {
-    const { password, confirmPassword, email } = req.body;
+    const email = req.email;
+    const { password, confirmPassword } = req.body;
 
     const existingUser = await user.findOne({ email: email.toLowerCase() });
 
@@ -191,6 +237,12 @@ const userForgotPasswordControllerMain = async (req, res) => {
     existingUser.password = hashedPassword;
     existingUser.confirmPassword = hashedPassword;
     await existingUser.save();
+
+    res.clearCookie("otpToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
 
     res.status(200).json({
       success: true,
@@ -211,4 +263,5 @@ module.exports = {
   userForgotPasswordController,
   otpVerifyController,
   userForgotPasswordControllerMain,
+  userDetailsController
 };

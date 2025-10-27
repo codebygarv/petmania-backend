@@ -105,18 +105,9 @@ const userForgotOTPValidation = (req, res, next) => {
   }
 };
 
-const userForgotPasswordMainValidation = (req, res, main) => {
-  const { email, password, confirmPassword } = req.body;
-
+const userForgotPasswordMainValidation = (req, res, next) => {
   try {
-    const { email, password, confirmPassword } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "please enter required field",
-      });
-    }
+    const {  password, confirmPassword } = req.body;
 
     if (!password) {
       return res.status(400).json({
