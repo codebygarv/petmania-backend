@@ -9,6 +9,11 @@ const crypto = require("crypto");
 const otpGenerate = require("../../config/otpGenerate");
 const saveOtpToDB = require("../../config/saveOtpToDB");
 const db = require("../../database/sqlConnection");
+const saveRegisterOtpToDB = require("../../config/saveRegisterOtpToDB");
+const {
+  RegisterOtpTemplate,
+  registrationOtpTemplate,
+} = require("../../config/emailTemplate/RegisterOtpTemplate");
 
 const userLoginController = async (req, res) => {
   try {
@@ -83,6 +88,16 @@ const userRegisterController = async (req, res) => {
       confirmPassword: hashedPassword,
     });
 
+    const otp = otpGenerate();
+    saveRegisterOtpToDB(newUser.email, otp);
+
+    await emailService.sendMail({
+      from: `"Support Team" <${process.env.EMAIL_USER}>`,
+      to: newUser.email,
+      subject: "OTP for Password Reset",
+      html: registrationOtpTemplate(newUser, otp),
+    });
+
     await newUser.save();
 
     const token = generateToken({
@@ -92,7 +107,7 @@ const userRegisterController = async (req, res) => {
 
     res
       .status(201)
-      .cookie("signupToken", token, {
+      .cookie("token", token, {
         httpOnly: true, // Secure: prevents access from frontend JS
         secure: false, // Set true in production with HTTPS
         sameSite: "strict",
@@ -101,7 +116,6 @@ const userRegisterController = async (req, res) => {
         success: true,
         message: "User registered successfully",
         data: {
-          token,
           user: {
             id: newUser._id,
             email: newUser.email,
@@ -115,6 +129,41 @@ const userRegisterController = async (req, res) => {
       message: "Internal server error",
     });
   }
+};
+
+const userRegisterOtpController = async (req, res) => {
+  const email = req.email;
+  const { otp } = req.body;
+
+  db.get(
+    `SELECT * FROM register_otp_store WHERE email = ? AND otp = ?`,
+    [email, otp],
+    async (err, row) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({ success: false, message: "Database error" });
+      }
+
+      if (!row) {
+        return res.status(400).json({ success: false, message: "Invalid OTP" });
+      }
+
+      if (Date.now() > row.expires_at) {
+        // Delete expired OTP
+        db.run(`DELETE FROM register_otp_store WHERE email = ?`, [email]);
+        return res.status(400).json({ success: false, message: "OTP expired" });
+      }
+
+      // OTP is valid → delete from DB
+      db.run(`DELETE FROM register_otp_store WHERE email = ?`, [email]);
+
+      return res.status(200).json({
+        success: true,
+        message: "OTP verified successfully",
+      });
+    }
+  );
 };
 
 const userDetailsController = async (req, res) => {
@@ -175,7 +224,7 @@ const userForgotPasswordController = async (req, res) => {
   }
 };
 
-const otpVerifyController = (req, res) => {
+const userForgotPasswordotpVerifyController = (req, res) => {
   const { otp, email } = req.body;
 
   db.get(
@@ -260,8 +309,9 @@ const userForgotPasswordControllerMain = async (req, res) => {
 module.exports = {
   userLoginController,
   userRegisterController,
+  userRegisterOtpController,
   userForgotPasswordController,
-  otpVerifyController,
+  userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
-  userDetailsController
+  userDetailsController,
 };

@@ -71,6 +71,20 @@ const userRegisterValidation = (req, res, next) => {
   }
 };
 
+const userRegisterOTPValidation = (req, res, next) => {
+  try {
+    if (!req.body.otp) {
+      return res.status(400).json({
+        success: false,
+        message: "please enter required field",
+      });
+    }
+    next();
+  } catch (error) {
+    console.error("forgot password validation error:", error);
+  }
+};
+
 const userForgotValidation = (req, res, next) => {
   try {
     if (!req.body.email) {
@@ -152,6 +166,7 @@ const userForgotPasswordMainValidation = (req, res, next) => {
 module.exports = {
   userLoginValidation,
   userRegisterValidation,
+  userRegisterOTPValidation,
   userForgotValidation,
   userForgotOTPValidation,
   userForgotPasswordMainValidation
