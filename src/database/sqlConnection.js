@@ -24,4 +24,15 @@ db.serialize(() => {
     `);
 });
 
+db.serialize(() => {
+  db.run(`
+      CREATE TABLE IF NOT EXISTS register_otp_store (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT,
+        otp TEXT,
+        expires_at INTEGER
+      )
+    `);
+});
+
 module.exports = db;
