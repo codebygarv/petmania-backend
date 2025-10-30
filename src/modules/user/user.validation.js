@@ -31,6 +31,13 @@ const userRegisterValidation = (req, res, next) => {
       });
     }
 
+    // if (email.includes("+")) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Email address must not contain '+'",
+    //   });
+    // }
+
     if (!password) {
       return res.status(400).json({
         success: false,
@@ -121,7 +128,7 @@ const userForgotOTPValidation = (req, res, next) => {
 
 const userForgotPasswordMainValidation = (req, res, next) => {
   try {
-    const {  password, confirmPassword } = req.body;
+    const { password, confirmPassword } = req.body;
 
     if (!password) {
       return res.status(400).json({
@@ -169,5 +176,5 @@ module.exports = {
   userRegisterOTPValidation,
   userForgotValidation,
   userForgotOTPValidation,
-  userForgotPasswordMainValidation
+  userForgotPasswordMainValidation,
 };
