@@ -26,7 +26,6 @@ router.post("/register", userRegisterValidation, userRegisterController);
 
 router.post(
   "/resgister/verifyOtp",
-  verifyAuthMiddleware,
   userRegisterOTPValidation,
   userRegisterOtpController
 );

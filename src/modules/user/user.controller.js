@@ -99,19 +99,9 @@ const userRegisterController = async (req, res) => {
     });
 
     await newUser.save();
-
-    const token = generateToken({
-      userId: newUser._id,
-      email: newUser.email,
-    });
-
     res
       .status(201)
-      .cookie("token", token, {
-        httpOnly: true, // Secure: prevents access from frontend JS
-        secure: false, // Set true in production with HTTPS
-        sameSite: "strict",
-      })
+
       .json({
         success: true,
         message: "User registered successfully",
@@ -132,8 +122,7 @@ const userRegisterController = async (req, res) => {
 };
 
 const userRegisterOtpController = async (req, res) => {
-  const email = req.email;
-  const { otp } = req.body;
+  const { otp, email } = req.body;
 
   db.get(
     `SELECT * FROM register_otp_store WHERE email = ? AND otp = ?`,
@@ -155,13 +144,25 @@ const userRegisterOtpController = async (req, res) => {
         return res.status(400).json({ success: false, message: "OTP expired" });
       }
 
+      const token = generateToken({
+        email: email,
+        // role we need to add in future
+      });
+
       // OTP is valid → delete from DB
       db.run(`DELETE FROM register_otp_store WHERE email = ?`, [email]);
 
-      return res.status(200).json({
-        success: true,
-        message: "OTP verified successfully",
-      });
+      return res
+        .status(200)
+        .cookie("token", token, {
+          httpOnly: true, // Secure: prevents access from frontend JS
+          secure: process.env.NODE_ENV === "production" ? true : false, // Set true in production with HTTPS
+          sameSite: "strict",
+        })
+        .json({
+          success: true,
+          message: "OTP verified successfully",
+        });
     }
   );
 };
