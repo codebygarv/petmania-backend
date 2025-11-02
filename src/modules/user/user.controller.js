@@ -78,7 +78,9 @@ const userRegisterController = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: "Email already in use",
+        error: {
+          message: "Email already in use",
+        },
       });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -116,7 +118,9 @@ const userRegisterController = async (req, res) => {
     console.error("Registration error:", error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      error: {
+        message: "Internal server error",
+      },
     });
   }
 };
@@ -129,13 +133,21 @@ const userRegisterOtpController = async (req, res) => {
     [email, otp],
     async (err, row) => {
       if (err) {
-        return res
-          .status(500)
-          .json({ success: false, message: "Database error" });
+        return res.status(500).json({
+          success: false,
+          error: {
+            message: "Database error",
+          },
+        });
       }
 
       if (!row) {
-        return res.status(400).json({ success: false, message: "Invalid OTP" });
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: "Invalid OTP",
+          },
+        });
       }
 
       if (Date.now() > row.expires_at) {
@@ -199,7 +211,9 @@ const userForgotPasswordController = async (req, res) => {
     if (!existingUser) {
       return res.status(404).json({
         success: false,
-        message: "User with this email does not exist",
+        error: {
+          message: "User with this email does not exist",
+        },
       });
     }
     const otp = otpGenerate();
@@ -220,7 +234,9 @@ const userForgotPasswordController = async (req, res) => {
     console.error("Forgot password error:", error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      error: {
+        message: "Internal server error",
+      },
     });
   }
 };
