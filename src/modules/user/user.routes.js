@@ -30,6 +30,7 @@ router.post(
   userRegisterOtpController
 );
 
+// router.post("/login",  verifyOtpMiddleware, userLoginValidation, userLoginController);  // need to check this
 router.post("/login", userLoginValidation, userLoginController);
 
 router.get("/details", verifyAuthMiddleware, userDetailsController);

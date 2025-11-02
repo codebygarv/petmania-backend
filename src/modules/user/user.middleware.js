@@ -4,9 +4,12 @@ const verifyOtpMiddleware = (req, res, next) => {
   const token = req.cookies.otpToken;
 
   if (!token) {
-    return res
-      .status(401)
-      .json({ success: false, message: "You are not authorized" });
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: "You are not authorized",
+      },
+    });
   }
 
   try {
@@ -15,7 +18,9 @@ const verifyOtpMiddleware = (req, res, next) => {
     if (!decoded.otpVerified) {
       return res.status(403).json({
         success: false,
-        message: "OTP verification required before password reset",
+        error: {
+          message: "OTP verification required before password reset",
+        },
       });
     }
 
@@ -24,7 +29,9 @@ const verifyOtpMiddleware = (req, res, next) => {
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token",
+      error: {
+        message: "Invalid or expired token",
+      },
     });
   }
 };
@@ -44,7 +51,9 @@ const verifyAuthMiddleware = (req, res, next) => {
     if (!decoded.email) {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized",
+        error: {
+          message: "You are not authorized",
+        },
       });
     }
 
@@ -53,12 +62,14 @@ const verifyAuthMiddleware = (req, res, next) => {
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token",
+      error: {
+        message: "Invalid or expired token",
+      },
     });
   }
 };
 
 module.exports = {
   verifyOtpMiddleware,
-  verifyAuthMiddleware
+  verifyAuthMiddleware,
 };

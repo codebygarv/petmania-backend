@@ -23,7 +23,9 @@ const userLoginController = async (req, res) => {
     if (!existingUser) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        error: {
+          message: "Invalid email or password",
+        },
       });
     }
 
@@ -35,7 +37,9 @@ const userLoginController = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        error: {
+          message: "Invalid email or password",
+        },
       });
     }
 
@@ -65,7 +69,9 @@ const userLoginController = async (req, res) => {
     console.error("Login error:", error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      error: {
+        message: "Internal server error",
+      },
     });
   }
 };
@@ -249,13 +255,21 @@ const userForgotPasswordotpVerifyController = (req, res) => {
     [email, otp],
     async (err, row) => {
       if (err) {
-        return res
-          .status(500)
-          .json({ success: false, message: "Database error" });
+        return res.status(500).json({
+          success: false,
+          error: {
+            message: "Database error",
+          },
+        });
       }
 
       if (!row) {
-        return res.status(400).json({ success: false, message: "Invalid OTP" });
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: "Invalid OTP",
+          },
+        });
       }
 
       if (Date.now() > row.expires_at) {
@@ -295,7 +309,9 @@ const userForgotPasswordControllerMain = async (req, res) => {
     if (!existingUser) {
       return res.status(404).json({
         success: false,
-        message: "User with this email does not exist",
+        error: {
+          message: "User with this email does not exist",
+        },
       });
     }
 
@@ -318,7 +334,9 @@ const userForgotPasswordControllerMain = async (req, res) => {
     console.error("Password update error:", error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      error: {
+        message: "Internal server error",
+      },
     });
   }
 };
