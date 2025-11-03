@@ -54,7 +54,7 @@ const userLoginController = async (req, res) => {
       .status(200)
       .cookie("token", token, {
         httpOnly: true, // Secure: prevents access from frontend JS
-        secure: false, // Set true in production with HTTPS
+        secure: true, // Set true in production with HTTPS
         sameSite: "strict",
       })
       .json({
@@ -159,7 +159,7 @@ const userRegisterOtpController = async (req, res) => {
       .status(200)
       .cookie("token", token, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "strict",
       })
       .json({
@@ -263,7 +263,7 @@ const userForgotPasswordotpVerifyController = async (req, res) => {
       .status(200)
       .cookie("otpToken", tempToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "strict",
         maxAge: 5 * 60 * 1000,
       })
@@ -303,7 +303,7 @@ const userForgotPasswordControllerMain = async (req, res) => {
 
     res.clearCookie("otpToken", {
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: "strict",
     });
 
