@@ -1,19 +1,22 @@
-const db = require("../database/sqlConnection");
+const OtpStore = require("../modules/user/models/userRegisterOtp.model");
 
-const saveRegisterOtpToDB = (email, otp) => {
+const saveRegisterOtpToDB = async (email, otp) => {
   const expiresAt = Date.now() + 5 * 60 * 1000; // OTP valid for 5 mins
 
-  db.run(`DELETE FROM register_otp_store WHERE email = ?`, [email], (err) => {
-    if (err) console.log("Error deleting previous OTP:", err.message);
-  });
+  try {
+    await OtpStore.deleteOne({ email, type: "register" });
 
-  db.run(
-    `INSERT INTO register_otp_store (email, otp, expires_at) VALUES (?, ?, ?)`,
-    [email, otp, expiresAt],
-    (err) => {
-      if (err) console.log("Error inserting OTP:", err.message);
-    }
-  );
+    await OtpStore.create({
+      email,
+      otp,
+      type: "register",
+      expiresAt,
+    });
+
+    console.log(`OTP saved for ${email}`);
+  } catch (err) {
+    console.error("Error saving OTP to MongoDB:", err.message);
+  }
 };
 
 module.exports = saveRegisterOtpToDB;

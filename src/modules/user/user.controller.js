@@ -3,7 +3,7 @@ const {
   otpGenerateTemplate,
 } = require("../../config/emailTemplate/otpGenerationTemplate");
 const { generateToken } = require("../../config/jwt");
-const user = require("./user.model");
+const user = require("./models/user.model");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const otpGenerate = require("../../config/otpGenerate");
@@ -14,6 +14,8 @@ const {
   RegisterOtpTemplate,
   registrationOtpTemplate,
 } = require("../../config/emailTemplate/RegisterOtpTemplate");
+const RegisterOtp = require("./models/userRegisterOtp.model");
+const UserOtp = require("./models/userForgotOtp.model");
 
 const userLoginController = async (req, res) => {
   try {
@@ -134,55 +136,43 @@ const userRegisterController = async (req, res) => {
 const userRegisterOtpController = async (req, res) => {
   const { otp, email } = req.body;
 
-  db.get(
-    `SELECT * FROM register_otp_store WHERE email = ? AND otp = ?`,
-    [email, otp],
-    async (err, row) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          error: {
-            message: "Database error",
-          },
-        });
-      }
+  try {
+    const existingOtp = await RegisterOtp.findOne({ email, otp });
 
-      if (!row) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            message: "Invalid OTP",
-          },
-        });
-      }
-
-      if (Date.now() > row.expires_at) {
-        // Delete expired OTP
-        db.run(`DELETE FROM register_otp_store WHERE email = ?`, [email]);
-        return res.status(400).json({ success: false, message: "OTP expired" });
-      }
-
-      const token = generateToken({
-        email: email,
-        // role we need to add in future
+    if (!existingOtp) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Invalid OTP" },
       });
-
-      // OTP is valid → delete from DB
-      db.run(`DELETE FROM register_otp_store WHERE email = ?`, [email]);
-
-      return res
-        .status(200)
-        .cookie("token", token, {
-          httpOnly: true, // Secure: prevents access from frontend JS
-          secure: process.env.NODE_ENV === "production" ? true : false, // Set true in production with HTTPS
-          sameSite: "strict",
-        })
-        .json({
-          success: true,
-          message: "OTP verified successfully",
-        });
     }
-  );
+
+    if (Date.now() > new Date(existingOtp.expiresAt)) {
+      await RegisterOtp.deleteOne({ email });
+      return res.status(400).json({ success: false, message: "OTP expired" });
+    }
+
+    const token = generateToken({ email });
+
+    await RegisterOtp.deleteOne({ email });
+
+    return res
+      .status(200)
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "strict",
+      })
+      .json({
+        success: true,
+        message: "OTP verified successfully",
+      });
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
 };
 
 const userDetailsController = async (req, res) => {
@@ -247,56 +237,47 @@ const userForgotPasswordController = async (req, res) => {
   }
 };
 
-const userForgotPasswordotpVerifyController = (req, res) => {
+const userForgotPasswordotpVerifyController = async (req, res) => {
   const { otp, email } = req.body;
 
-  db.get(
-    `SELECT * FROM otp_store WHERE email = ? AND otp = ?`,
-    [email, otp],
-    async (err, row) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          error: {
-            message: "Database error",
-          },
-        });
-      }
+  try {
+    const existingOtp = await UserOtp.findOne({ email, otp });
 
-      if (!row) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            message: "Invalid OTP",
-          },
-        });
-      }
-
-      if (Date.now() > row.expires_at) {
-        // Delete expired OTP
-        db.run(`DELETE FROM otp_store WHERE email = ?`, [email]);
-        return res.status(400).json({ success: false, message: "OTP expired" });
-      }
-
-      // OTP is valid → delete from DB
-      db.run(`DELETE FROM otp_store WHERE email = ?`, [email]);
-
-      const tempToken = generateToken({ email, otpVerified: true }, "10m"); // valid for only 10 minutes and it's temperory
-
-      return res
-        .status(200)
-        .cookie("otpToken", tempToken, {
-          httpOnly: true, // Secure: prevents access from frontend JS
-          secure: false, // Set true in production with HTTPS
-          sameSite: "strict",
-          maxAge: 5 * 60 * 1000, // 5 minute
-        })
-        .json({
-          success: true,
-          message: "OTP verified successfully",
-        });
+    if (!existingOtp) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Invalid OTP" },
+      });
     }
-  );
+
+    if (Date.now() > new Date(existingOtp.expiresAt)) {
+      await UserOtp.deleteOne({ email });
+      return res.status(400).json({ success: false, message: "OTP expired" });
+    }
+
+    await UserOtp.deleteOne({ email });
+
+    const tempToken = generateToken({ email, otpVerified: true }, "10m");
+
+    return res
+      .status(200)
+      .cookie("otpToken", tempToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "strict",
+        maxAge: 5 * 60 * 1000,
+      })
+      .json({
+        success: true,
+        message: "OTP verified successfully",
+      });
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
 };
 
 const userForgotPasswordControllerMain = async (req, res) => {
@@ -322,7 +303,7 @@ const userForgotPasswordControllerMain = async (req, res) => {
 
     res.clearCookie("otpToken", {
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: "strict",
     });
 
