@@ -52,15 +52,16 @@ const userLoginController = async (req, res) => {
 
     res
       .status(200)
-      .cookie("token", token, {
-        httpOnly: true, // Secure: prevents access from frontend JS
-        secure: true, // Set true in production with HTTPS
-        sameSite: "strict",
-      })
+      // .cookie("token", token, {
+      //   httpOnly: true, // Secure: prevents access from frontend JS
+      //   secure: true, // Set true in production with HTTPS
+      //   sameSite: "strict",
+      // })
       .json({
         success: true,
         message: "Login successful",
         data: {
+          token: token,
           user: {
             id: existingUser._id,
             email: existingUser.email,
@@ -157,14 +158,17 @@ const userRegisterOtpController = async (req, res) => {
 
     return res
       .status(200)
-      .cookie("token", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-      })
+      // .cookie("token", token, {
+      //   httpOnly: true,
+      //   secure: true,
+      //   sameSite: "strict",
+      // })
       .json({
         success: true,
         message: "OTP verified successfully",
+        data: {
+          token: token,
+        },
       });
   } catch (error) {
     console.error("OTP verification error:", error);
@@ -261,15 +265,18 @@ const userForgotPasswordotpVerifyController = async (req, res) => {
 
     return res
       .status(200)
-      .cookie("otpToken", tempToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 5 * 60 * 1000,
-      })
+      // .cookie("otpToken", tempToken, {
+      //   httpOnly: true,
+      //   secure: true,
+      //   sameSite: "strict",
+      //   maxAge: 5 * 60 * 1000,
+      // })
       .json({
         success: true,
         message: "OTP verified successfully",
+        data: {
+          token: tempToken,
+        },
       });
   } catch (error) {
     console.error("OTP verification error:", error);
@@ -301,11 +308,11 @@ const userForgotPasswordControllerMain = async (req, res) => {
     existingUser.confirmPassword = hashedPassword;
     await existingUser.save();
 
-    res.clearCookie("otpToken", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    });
+    // res.clearCookie("otpToken", {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "strict",
+    // });
 
     res.status(200).json({
       success: true,
