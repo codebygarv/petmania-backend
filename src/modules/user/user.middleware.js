@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 const verifyOtpMiddleware = (req, res, next) => {
-  const token = req.cookies.otpToken;
+  const token = req.cookies.otpToken || req.headers.authorization;
 
   console.log(token);
 
@@ -39,7 +39,7 @@ const verifyOtpMiddleware = (req, res, next) => {
 };
 
 const verifyAuthMiddleware = (req, res, next) => {
-  const token = req.cookies.token;
+  const token = req.cookies.token || req.headers.authorization;
 
   if (!token) {
     return res
