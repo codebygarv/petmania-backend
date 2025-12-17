@@ -1,8 +1,18 @@
 const jwt = require("jsonwebtoken");
 
 const verifyOtpMiddleware = (req, res, next) => {
-  const token = req.headers.authorization.split(" ")[1];
-  console.log(token);
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: "Authorization token missing",
+      },
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({
@@ -12,7 +22,6 @@ const verifyOtpMiddleware = (req, res, next) => {
       },
     });
   }
-
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -39,9 +48,18 @@ const verifyOtpMiddleware = (req, res, next) => {
 };
 
 const verifyAuthMiddleware = (req, res, next) => {
-  const token = req.headers.authorization.split(" ")[1];
+  const authHeader = req.headers.authorization;
 
-  console.log(token);
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: "Authorization token missing",
+      },
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
 
   if (!token) {
     return res
