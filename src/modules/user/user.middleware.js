@@ -43,6 +43,7 @@ const verifyOtpMiddleware = (req, res, next) => {
       error: {
         message: "Invalid or expired token",
       },
+      error
     });
   }
 };
