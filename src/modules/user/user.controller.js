@@ -16,6 +16,11 @@ const {
 } = require("../../config/emailTemplate/RegisterOtpTemplate");
 const RegisterOtp = require("./models/userRegisterOtp.model");
 const UserOtp = require("./models/userForgotOtp.model");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client(
+  process.env.GOOGLE_WEB_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
+);
 
 const userLoginController = async (req, res) => {
   try {
@@ -78,6 +83,49 @@ const userLoginController = async (req, res) => {
     });
   }
 };
+
+const userGoogleLoginController = async (req, res) => {
+  const { code, redirectUri } = req.body;
+
+  try {
+    const { tokens } = await client.getToken({
+      code,
+      redirect_uri: redirectUri,
+    });
+
+    
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_WEB_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const user = {
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+    };
+
+    const token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Login successful",
+        data: {
+          token: token,
+          user: user
+        },
+      });
+  } catch (error) {
+    res.status(401).json({ message: "Invalid Google token" });
+  }
+}
 
 const userRegisterController = async (req, res) => {
   try {
@@ -337,4 +385,5 @@ module.exports = {
   userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
   userDetailsController,
+  userGoogleLoginController,
 };
