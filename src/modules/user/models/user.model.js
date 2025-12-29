@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema(
     passwordChangeCount: {
       type: Number,
     },
+    userVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

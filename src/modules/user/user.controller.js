@@ -79,6 +79,51 @@ const userLoginController = async (req, res) => {
   }
 };
 
+<<<<<<< Updated upstream
+=======
+const userGoogleLoginController = async (req, res) => {
+  const { code, redirectUri } = req.body;
+
+  try {
+    const { tokens } = await client.getToken({
+      code,
+      redirect_uri: redirectUri,
+    });
+
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_WEB_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const user = {
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+    };
+
+    const token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Login successful",
+        data: {
+          token: token,
+          user: user
+        },
+      });
+  } catch (error) {
+    res.status(401).json({ message: "Invalid Google token" });
+  }
+}
+
+>>>>>>> Stashed changes
 const userRegisterController = async (req, res) => {
   try {
     const { email, password, confirmPassword } = req.body;
@@ -306,6 +351,8 @@ const userForgotPasswordControllerMain = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     existingUser.password = hashedPassword;
     existingUser.confirmPassword = hashedPassword;
+    existingUser.passwordChangeCount =
+      (existingUser.passwordChangeCount) + 1;
     await existingUser.save();
 
     // res.clearCookie("otpToken", {
