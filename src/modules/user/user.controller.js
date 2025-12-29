@@ -16,6 +16,11 @@ const {
 } = require("../../config/emailTemplate/RegisterOtpTemplate");
 const RegisterOtp = require("./models/userRegisterOtp.model");
 const UserOtp = require("./models/userForgotOtp.model");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client(
+  process.env.GOOGLE_WEB_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
+);
 
 const userLoginController = async (req, res) => {
   try {
@@ -79,8 +84,6 @@ const userLoginController = async (req, res) => {
   }
 };
 
-<<<<<<< Updated upstream
-=======
 const userGoogleLoginController = async (req, res) => {
   const { code, redirectUri } = req.body;
 
@@ -90,6 +93,7 @@ const userGoogleLoginController = async (req, res) => {
       redirect_uri: redirectUri,
     });
 
+    
     const ticket = await client.verifyIdToken({
       idToken: tokens.id_token,
       audience: process.env.GOOGLE_WEB_CLIENT_ID,
@@ -123,7 +127,6 @@ const userGoogleLoginController = async (req, res) => {
   }
 }
 
->>>>>>> Stashed changes
 const userRegisterController = async (req, res) => {
   try {
     const { email, password, confirmPassword } = req.body;
@@ -384,4 +387,5 @@ module.exports = {
   userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
   userDetailsController,
+  userGoogleLoginController,
 };
