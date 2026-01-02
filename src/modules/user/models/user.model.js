@@ -14,19 +14,27 @@ const userSchema = new mongoose.Schema(
     },
     phoneNumber: {
       type: String,
-      required: true,
     },
     password: {
       type: String,
-      required: true,
       minlength: 6,
     },
     confirmPassword: {
       type: String,
-      required: true,
     },
     passwordChangeCount: {
       type: Number,
+      default: 0,
+    },
+    googleId: {
+      type: String,
+    },
+    isGoogleUser: {
+      type: Boolean,
+      default: false,
+    },
+    avatar: {
+      type: String,
     },
     userVerified: {
       type: Boolean,

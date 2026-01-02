@@ -272,7 +272,7 @@ const userUpdateDetailsController = async (req, res) => {
     const email = req.email;
     const updateData = req.body;
     const updatedUser = await user.findOneAndUpdate(
-      { email: email.toLowerCase() },
+      { email: email?.toLowerCase() },
       updateData,
       { new: true }
     );
@@ -430,4 +430,5 @@ module.exports = {
   userForgotPasswordControllerMain,
   userDetailsController,
   userGoogleLoginController,
+  userUpdateDetailsController,
 };
