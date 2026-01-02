@@ -36,6 +36,7 @@ router.post("/login", userLoginValidation, userLoginController);
 router.post("/google", userGoogleLoginController);
 
 router.get("/details", verifyAuthMiddleware, userDetailsController);
+router.post("/updateDetails", verifyAuthMiddleware);
 
 router.post(
   "/forgotPassword",
