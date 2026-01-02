@@ -69,10 +69,7 @@ const userLoginController = async (req, res) => {
         message: "Login successful",
         data: {
           token: token,
-          user: {
-            id: existingUser._id,
-            email: existingUser.email,
-          },
+          user: existingUser,
         },
       });
   } catch (error) {
@@ -190,10 +187,7 @@ const userRegisterController = async (req, res) => {
         success: true,
         message: "User registered successfully",
         data: {
-          user: {
-            id: newUser._id,
-            email: newUser.email,
-          },
+          user: newUser,
         },
       });
   } catch (error) {
@@ -261,14 +255,37 @@ const userDetailsController = async (req, res) => {
       success: true,
       message: "Details Fetched Successfully",
       data: {
-        user: {
-          id: userDetails._id,
-          email: userDetails.email,
-        },
+        user: userDetails,
       },
     });
   } catch (error) {
     console.error("details fetching  error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const userUpdateDetailsController = async (req, res) => {
+  try {
+    const email = req.email;
+    const updateData = req.body;
+    const updatedUser = await user.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      updateData,
+      { new: true }
+    );
+    res.status(200).json({
+      success: true,
+      message: "Details Updated Successfully",
+      data: {
+        user: updatedUser,
+      },
+    });
+  }
+  catch (error) {
+    console.error("details updating error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
