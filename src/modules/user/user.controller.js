@@ -17,6 +17,8 @@ const {
 const RegisterOtp = require("./models/userRegisterOtp.model");
 const UserOtp = require("./models/userForgotOtp.model");
 const { OAuth2Client } = require("google-auth-library");
+const jwt = require("jsonwebtoken");
+const axios = require("axios");
 const client = new OAuth2Client(
   process.env.GOOGLE_WEB_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET
@@ -85,47 +87,70 @@ const userLoginController = async (req, res) => {
 };
 
 const userGoogleLoginController = async (req, res) => {
-  const { code, redirectUri } = req.body;
-
   try {
-    const { tokens } = await client.getToken({
-      code,
-      redirect_uri: redirectUri,
-    });
+    const { accessToken } = req.body;
 
-    
-    const ticket = await client.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: process.env.GOOGLE_WEB_CLIENT_ID,
-    });
+    if (!accessToken) {
+      return res.status(400).json({ message: "Access Token missing" });
+    }
 
-    const payload = ticket.getPayload();
-
-    const user = {
-      googleId: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      picture: payload.picture,
-    };
-
-    const token = jwt.sign(user, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Login successful",
-        data: {
-          token: token,
-          user: user
+    // 🔥 Get user info from Google
+    const googleRes = await axios.get(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
+      }
+    );
+
+    const {
+      sub: googleId,
+      email,
+      name,
+      picture,
+    } = googleRes.data;
+
+    if (!email) {
+      return res.status(401).json({ message: "Invalid Google access token" });
+    }
+
+    let existingUser = await user.findOne({ email });
+
+    if (!existingUser) {
+      existingUser = await user.create({
+        email,
+        googleId,
+        name,
+        avatar: picture,
+        isGoogleUser: true,
       });
+    }
+
+    const token = jwt.sign(
+      { userId: existingUser._id, email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      data: {
+        token,
+        user: {
+          id: existingUser._id,
+          email,
+          name,
+          avatar: picture,
+        },
+      },
+    });
   } catch (error) {
+    console.error("Google login error:", error.response?.data || error.message);
     res.status(401).json({ message: "Invalid Google token" });
   }
-}
+};
 
 const userRegisterController = async (req, res) => {
   try {
