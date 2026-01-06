@@ -63,10 +63,12 @@ const userSchema = new mongoose.Schema(
     profileImage: {
       type: String,
     },
-    AdhardCardImage: {
+    adharCardFrontImage: {
       type: String,
     },
-
+    adharCardBackImage: {
+      type: String,
+    },
   },
   {
     timestamps: true,
