@@ -102,12 +102,7 @@ const userGoogleLoginController = async (req, res) => {
       }
     );
 
-    const {
-      sub: googleId,
-      email,
-      name,
-      picture,
-    } = googleRes.data;
+    const { sub: googleId, email, name, picture } = googleRes.data;
 
     if (!email) {
       return res.status(401).json({ message: "Invalid Google access token" });
@@ -224,20 +219,22 @@ const userRegisterOtpController = async (req, res) => {
 
     await RegisterOtp.deleteOne({ email });
 
-    return res
-      .status(200)
-      // .cookie("token", token, {
-      //   httpOnly: true,
-      //   secure: true,
-      //   sameSite: "strict",
-      // })
-      .json({
-        success: true,
-        message: "OTP verified successfully",
-        data: {
-          token: token,
-        },
-      });
+    return (
+      res
+        .status(200)
+        // .cookie("token", token, {
+        //   httpOnly: true,
+        //   secure: true,
+        //   sameSite: "strict",
+        // })
+        .json({
+          success: true,
+          message: "OTP verified successfully",
+          data: {
+            token: token,
+          },
+        })
+    );
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json({
@@ -297,84 +294,97 @@ const userUpdateDetailsController = async (req, res) => {
     // This will hold all updated fields (normal fields + new Cloudinary URLs)
     const updatePayload = { ...otherData };
 
-    // Upload new profile image to Cloudinary (if sent) and delete old one
+    // Handle profile image: only upload if different from existing
     if (profileImage) {
-      try {
-        // Upload as-is (no specific folder) and get the URL
-        const uploadResult = await cloudinary.uploader.upload(profileImage);
+      // If new image is same as old (same Cloudinary URL), keep existing
+      if (profileImage === oldProfileImage) {
+        updatePayload.profileImage = oldProfileImage;
+      } else {
+        // Different image: upload new and delete old
+        try {
+          const uploadResult = await cloudinary.uploader.upload(profileImage);
+          updatePayload.profileImage = uploadResult.secure_url;
 
-        // Store the URL returned by Cloudinary in DB
-        updatePayload.profileImage = uploadResult.secure_url;
-
-        // If old image exists, delete it from Cloudinary
-        if (oldProfileImage) {
-          try {
-            await cloudinary.uploader.destroy(oldProfileImage);
-          } catch (err) {
-            console.error(
-              "Error deleting old profile image from Cloudinary:",
-              err
-            );
+          // Delete old image if it exists
+          if (oldProfileImage) {
+            try {
+              await cloudinary.uploader.destroy(oldProfileImage);
+            } catch (err) {
+              console.error(
+                "Error deleting old profile image from Cloudinary:",
+                err
+              );
+            }
           }
+        } catch (err) {
+          console.error("Error uploading new profile image to Cloudinary:", err);
         }
-      } catch (err) {
-        console.error("Error uploading new profile image to Cloudinary:", err);
       }
     }
 
-    // Upload new adhar card front image to Cloudinary (if sent) and delete old one
+    // Handle adhar card front image: only upload if different from existing
     if (adharCardFrontImage) {
-      try {
-        // Upload as-is (no specific folder) and get the URL
-        const uploadResult = await cloudinary.uploader.upload(
-          adharCardFrontImage
-        );
+      // If new image is same as old (same Cloudinary URL), keep existing
+      if (adharCardFrontImage === oldAdharCardFrontImage) {
+        updatePayload.adharCardFrontImage = oldAdharCardFrontImage;
+      } else {
+        // Different image: upload new and delete old
+        try {
+          const uploadResult = await cloudinary.uploader.upload(
+            adharCardFrontImage
+          );
+          updatePayload.adharCardFrontImage = uploadResult.secure_url;
 
-        updatePayload.adharCardFrontImage = uploadResult.secure_url;
-
-        if (oldAdharCardFrontImage) {
-          try {
-            await cloudinary.uploader.destroy(oldAdharCardFrontImage);
-          } catch (err) {
-            console.error(
-              "Error deleting old adhar card front image from Cloudinary:",
-              err
-            );
+          // Delete old image if it exists
+          if (oldAdharCardFrontImage) {
+            try {
+              await cloudinary.uploader.destroy(oldAdharCardFrontImage);
+            } catch (err) {
+              console.error(
+                "Error deleting old adhar card front image from Cloudinary:",
+                err
+              );
+            }
           }
+        } catch (err) {
+          console.error(
+            "Error uploading new adhar card front image to Cloudinary:",
+            err
+          );
         }
-      } catch (err) {
-        console.error(
-          "Error uploading new adhar card front image to Cloudinary:",
-          err
-        );
       }
     }
 
-    // Upload new adhar card back image to Cloudinary (if sent) and delete old one
+    // Handle adhar card back image: only upload if different from existing
     if (adharCardBackImage) {
-      try {
-        // Upload as-is (no specific folder) and get the URL
-        const uploadResult = await cloudinary.uploader.upload(
-          adharCardBackImage
-        );
+      // If new image is same as old (same Cloudinary URL), keep existing
+      if (adharCardBackImage === oldAdharCardBackImage) {
+        updatePayload.adharCardBackImage = oldAdharCardBackImage;
+      } else {
+        // Different image: upload new and delete old
+        try {
+          const uploadResult = await cloudinary.uploader.upload(
+            adharCardBackImage
+          );
+          updatePayload.adharCardBackImage = uploadResult.secure_url;
 
-        updatePayload.adharCardBackImage = uploadResult.secure_url;
-
-        if (oldAdharCardBackImage) {
-          try {
-            await cloudinary.uploader.destroy(oldAdharCardBackImage);
-          } catch (err) {
-            console.error(
-              "Error deleting old adhar card back image from Cloudinary:",
-              err
-            );
+          // Delete old image if it exists
+          if (oldAdharCardBackImage) {
+            try {
+              await cloudinary.uploader.destroy(oldAdharCardBackImage);
+            } catch (err) {
+              console.error(
+                "Error deleting old adhar card back image from Cloudinary:",
+                err
+              );
+            }
           }
+        } catch (err) {
+          console.error(
+            "Error uploading new adhar card back image to Cloudinary:",
+            err
+          );
         }
-      } catch (err) {
-        console.error(
-          "Error uploading new adhar card back image to Cloudinary:",
-          err
-        );
       }
     }
 
@@ -460,21 +470,23 @@ const userForgotPasswordotpVerifyController = async (req, res) => {
 
     const tempToken = generateToken({ email, otpVerified: true }, "10m");
 
-    return res
-      .status(200)
-      // .cookie("otpToken", tempToken, {
-      //   httpOnly: true,
-      //   secure: true,
-      //   sameSite: "strict",
-      //   maxAge: 5 * 60 * 1000,
-      // })
-      .json({
-        success: true,
-        message: "OTP verified successfully",
-        data: {
-          token: tempToken,
-        },
-      });
+    return (
+      res
+        .status(200)
+        // .cookie("otpToken", tempToken, {
+        //   httpOnly: true,
+        //   secure: true,
+        //   sameSite: "strict",
+        //   maxAge: 5 * 60 * 1000,
+        // })
+        .json({
+          success: true,
+          message: "OTP verified successfully",
+          data: {
+            token: tempToken,
+          },
+        })
+    );
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json({
@@ -503,8 +515,7 @@ const userForgotPasswordControllerMain = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     existingUser.password = hashedPassword;
     existingUser.confirmPassword = hashedPassword;
-    existingUser.passwordChangeCount =
-      (existingUser.passwordChangeCount) + 1;
+    existingUser.passwordChangeCount = existingUser.passwordChangeCount + 1;
     await existingUser.save();
 
     // res.clearCookie("otpToken", {
