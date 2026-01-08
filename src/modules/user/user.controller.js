@@ -317,7 +317,10 @@ const userUpdateDetailsController = async (req, res) => {
             }
           }
         } catch (err) {
-          console.error("Error uploading new profile image to Cloudinary:", err);
+          console.error(
+            "Error uploading new profile image to Cloudinary:",
+            err
+          );
         }
       }
     }
