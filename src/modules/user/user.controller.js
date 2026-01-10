@@ -269,7 +269,6 @@ const userUpdateDetailsController = async (req, res) => {
   try {
     const email = req.email;
 
-    // Separate possible base64/image fields from other fields
     const {
       profileImage,
       adharCardFrontImage,
@@ -277,8 +276,9 @@ const userUpdateDetailsController = async (req, res) => {
       ...otherData
     } = req.body;
 
-    // Fetch existing user to correctly handle Cloudinary image cleanup
-    const existingUser = await user.findOne({ email: email?.toLowerCase() });
+    const existingUser = await user.findOne({
+      email: email?.toLowerCase(),
+    });
 
     if (!existingUser) {
       return res.status(404).json({
@@ -287,107 +287,51 @@ const userUpdateDetailsController = async (req, res) => {
       });
     }
 
-    const oldProfileImage = existingUser.profileImage;
-    const oldAdharCardFrontImage = existingUser.adharCardFrontImage;
-    const oldAdharCardBackImage = existingUser.adharCardBackImage;
-
-    // This will hold all updated fields (normal fields + new Cloudinary URLs)
     const updatePayload = { ...otherData };
 
-    // Handle profile image: only upload if different from existing
-    if (profileImage) {
-      // If new image is same as old (same Cloudinary URL), keep existing
-      if (profileImage === oldProfileImage) {
-        updatePayload.profileImage = oldProfileImage;
-      } else {
-        // Different image: upload new and delete old
-        try {
-          const uploadResult = await cloudinary.uploader.upload(profileImage);
-          updatePayload.profileImage = uploadResult.secure_url;
+    /* ---------------- PROFILE IMAGE ---------------- */
+    if (profileImage && profileImage !== existingUser.profileImage) {
+      const upload = await cloudinary.uploader.upload(profileImage);
 
-          // Delete old image if it exists
-          if (oldProfileImage) {
-            try {
-              await cloudinary.uploader.destroy(oldProfileImage);
-            } catch (err) {
-              console.error(
-                "Error deleting old profile image from Cloudinary:",
-                err
-              );
-            }
-          }
-        } catch (err) {
-          console.error(
-            "Error uploading new profile image to Cloudinary:",
-            err
-          );
-        }
+      updatePayload.profileImage = upload.secure_url;
+
+      if (existingUser.profileImage) {
+        const publicId = getPublicIdFromUrl(existingUser.profileImage);
+        await cloudinary.uploader.destroy(publicId);
       }
     }
 
-    // Handle adhar card front image: only upload if different from existing
-    if (adharCardFrontImage) {
-      // If new image is same as old (same Cloudinary URL), keep existing
-      if (adharCardFrontImage === oldAdharCardFrontImage) {
-        updatePayload.adharCardFrontImage = oldAdharCardFrontImage;
-      } else {
-        // Different image: upload new and delete old
-        try {
-          const uploadResult = await cloudinary.uploader.upload(
-            adharCardFrontImage
-          );
-          updatePayload.adharCardFrontImage = uploadResult.secure_url;
+    /* ---------------- AADHAR FRONT ---------------- */
+    if (
+      adharCardFrontImage &&
+      adharCardFrontImage !== existingUser.adharCardFrontImage
+    ) {
+      const upload = await cloudinary.uploader.upload(adharCardFrontImage);
 
-          // Delete old image if it exists
-          if (oldAdharCardFrontImage) {
-            try {
-              await cloudinary.uploader.destroy(oldAdharCardFrontImage);
-            } catch (err) {
-              console.error(
-                "Error deleting old adhar card front image from Cloudinary:",
-                err
-              );
-            }
-          }
-        } catch (err) {
-          console.error(
-            "Error uploading new adhar card front image to Cloudinary:",
-            err
-          );
-        }
+      updatePayload.adharCardFrontImage = upload.secure_url;
+
+      if (existingUser.adharCardFrontImage) {
+        const publicId = getPublicIdFromUrl(
+          existingUser.adharCardFrontImage
+        );
+        await cloudinary.uploader.destroy(publicId);
       }
     }
 
-    // Handle adhar card back image: only upload if different from existing
-    if (adharCardBackImage) {
-      // If new image is same as old (same Cloudinary URL), keep existing
-      if (adharCardBackImage === oldAdharCardBackImage) {
-        updatePayload.adharCardBackImage = oldAdharCardBackImage;
-      } else {
-        // Different image: upload new and delete old
-        try {
-          const uploadResult = await cloudinary.uploader.upload(
-            adharCardBackImage
-          );
-          updatePayload.adharCardBackImage = uploadResult.secure_url;
+    /* ---------------- AADHAR BACK ---------------- */
+    if (
+      adharCardBackImage &&
+      adharCardBackImage !== existingUser.adharCardBackImage
+    ) {
+      const upload = await cloudinary.uploader.upload(adharCardBackImage);
 
-          // Delete old image if it exists
-          if (oldAdharCardBackImage) {
-            try {
-              await cloudinary.uploader.destroy(oldAdharCardBackImage);
-            } catch (err) {
-              console.error(
-                "Error deleting old adhar card back image from Cloudinary:",
-                err
-              );
-            }
-          }
-        } catch (err) {
-          console.error(
-            "Error uploading new adhar card back image to Cloudinary:",
-            err
-          );
-        }
+      updatePayload.adharCardBackImage = upload.secure_url;
+
+      if (existingUser.adharCardBackImage) {
+        const publicId = getPublicIdFromUrl(
+          existingUser.adharCardBackImage
+        );
+        await cloudinary.uploader.destroy(publicId);
       }
     }
 
@@ -397,21 +341,20 @@ const userUpdateDetailsController = async (req, res) => {
       { new: true }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Details Updated Successfully",
-      data: {
-        user: updatedUser,
-      },
+      data: updatedUser,
     });
   } catch (error) {
-    console.error("details updating error:", error);
-    res.status(500).json({
+    console.error("Update error:", error);
+    return res.status(500).json({
       success: false,
       message: "Internal server error",
     });
   }
 };
+
 
 const userForgotPasswordController = async (req, res) => {
   try {
