@@ -25,6 +25,12 @@ const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_SECRET
 );
 
+// Helper function to check if string is a Cloudinary URL
+const isCloudinaryUrl = (str) => {
+  if (!str || typeof str !== "string") return false;
+  return str.includes("res.cloudinary.com") || str.startsWith("http");
+};
+
 // Helper function to extract public_id from Cloudinary URL
 const getPublicIdFromUrl = (url) => {
   if (!url) return null;
@@ -36,8 +42,8 @@ const getPublicIdFromUrl = (url) => {
       const afterUpload = parts[1];
       // Remove version prefix (v123456/) if present
       const withoutVersion = afterUpload.replace(/^v\d+\//, "");
-      // Remove file extension
-      const publicId = withoutVersion.split(".")[0];
+      // Remove file extension and any query parameters
+      const publicId = withoutVersion.split(".")[0].split("?")[0];
       return publicId;
     }
     return null;
@@ -45,6 +51,24 @@ const getPublicIdFromUrl = (url) => {
     console.error("Error extracting public_id from URL:", error);
     return null;
   }
+};
+
+// Helper function to validate image size (base64)
+const validateImageSize = (base64String, maxSizeMB = 4) => {
+  if (!base64String) return { valid: true };
+  
+  // Approximate size: base64 is ~33% larger than binary
+  const sizeInBytes = (base64String.length * 3) / 4;
+  const sizeInMB = sizeInBytes / (1024 * 1024);
+  
+  if (sizeInMB > maxSizeMB) {
+    return {
+      valid: false,
+      message: `Image size (${sizeInMB.toFixed(2)}MB) exceeds maximum allowed size (${maxSizeMB}MB)`,
+    };
+  }
+  
+  return { valid: true, sizeInMB };
 };
 
 const userLoginController = async (req, res) => {
@@ -313,12 +337,12 @@ const userUpdateDetailsController = async (req, res) => {
 
     /* ---------------- PROFILE IMAGE ---------------- */
     if (profileImage && profileImage !== existingUser.profileImage) {
-      try {
-        const upload = await cloudinary.uploader.upload(profileImage);
-        updatePayload.profileImage = upload.secure_url;
-
-        // Delete old image after successful upload
-        if (existingUser.profileImage) {
+      // Check if image is already a Cloudinary URL
+      if (isCloudinaryUrl(profileImage)) {
+        // If it's already a Cloudinary URL, just use it
+        updatePayload.profileImage = profileImage;
+        // Delete old image if different
+        if (existingUser.profileImage && existingUser.profileImage !== profileImage) {
           try {
             const publicId = getPublicIdFromUrl(existingUser.profileImage);
             if (publicId) {
@@ -331,9 +355,43 @@ const userUpdateDetailsController = async (req, res) => {
             );
           }
         }
-      } catch (err) {
-        console.error("Error uploading profile image to Cloudinary:", err);
-        throw new Error("Failed to upload profile image");
+      } else {
+        // It's a base64 string, validate size first
+        const sizeValidation = validateImageSize(profileImage, 4);
+        if (!sizeValidation.valid) {
+          return res.status(413).json({
+            success: false,
+            message: sizeValidation.message,
+          });
+        }
+
+        try {
+          const upload = await cloudinary.uploader.upload(profileImage, {
+            timeout: 60000, // 60 seconds timeout for Vercel
+          });
+          updatePayload.profileImage = upload.secure_url;
+
+          // Delete old image after successful upload
+          if (existingUser.profileImage) {
+            try {
+              const publicId = getPublicIdFromUrl(existingUser.profileImage);
+              if (publicId) {
+                await cloudinary.uploader.destroy(publicId);
+              }
+            } catch (err) {
+              console.error(
+                "Error deleting old profile image from Cloudinary:",
+                err
+              );
+            }
+          }
+        } catch (err) {
+          console.error("Error uploading profile image to Cloudinary:", err);
+          return res.status(500).json({
+            success: false,
+            message: err.message || "Failed to upload profile image. Please try again.",
+          });
+        }
       }
     }
 
@@ -342,16 +400,12 @@ const userUpdateDetailsController = async (req, res) => {
       adharCardFrontImage &&
       adharCardFrontImage !== existingUser.adharCardFrontImage
     ) {
-      try {
-        const upload = await cloudinary.uploader.upload(adharCardFrontImage);
-        updatePayload.adharCardFrontImage = upload.secure_url;
-
-        // Delete old image after successful upload
-        if (existingUser.adharCardFrontImage) {
+      // Check if image is already a Cloudinary URL
+      if (isCloudinaryUrl(adharCardFrontImage)) {
+        updatePayload.adharCardFrontImage = adharCardFrontImage;
+        if (existingUser.adharCardFrontImage && existingUser.adharCardFrontImage !== adharCardFrontImage) {
           try {
-            const publicId = getPublicIdFromUrl(
-              existingUser.adharCardFrontImage
-            );
+            const publicId = getPublicIdFromUrl(existingUser.adharCardFrontImage);
             if (publicId) {
               await cloudinary.uploader.destroy(publicId);
             }
@@ -362,12 +416,46 @@ const userUpdateDetailsController = async (req, res) => {
             );
           }
         }
-      } catch (err) {
-        console.error(
-          "Error uploading adhar card front image to Cloudinary:",
-          err
-        );
-        throw new Error("Failed to upload adhar card front image");
+      } else {
+        const sizeValidation = validateImageSize(adharCardFrontImage, 4);
+        if (!sizeValidation.valid) {
+          return res.status(413).json({
+            success: false,
+            message: sizeValidation.message,
+          });
+        }
+
+        try {
+          const upload = await cloudinary.uploader.upload(adharCardFrontImage, {
+            timeout: 60000,
+          });
+          updatePayload.adharCardFrontImage = upload.secure_url;
+
+          if (existingUser.adharCardFrontImage) {
+            try {
+              const publicId = getPublicIdFromUrl(
+                existingUser.adharCardFrontImage
+              );
+              if (publicId) {
+                await cloudinary.uploader.destroy(publicId);
+              }
+            } catch (err) {
+              console.error(
+                "Error deleting old adhar card front image from Cloudinary:",
+                err
+              );
+            }
+          }
+        } catch (err) {
+          console.error(
+            "Error uploading adhar card front image to Cloudinary:",
+            err
+          );
+          return res.status(500).json({
+            success: false,
+            message: err.message || "Failed to upload adhar card front image. Please try again.",
+          });
+        }
       }
     }
 
@@ -376,16 +464,12 @@ const userUpdateDetailsController = async (req, res) => {
       adharCardBackImage &&
       adharCardBackImage !== existingUser.adharCardBackImage
     ) {
-      try {
-        const upload = await cloudinary.uploader.upload(adharCardBackImage);
-        updatePayload.adharCardBackImage = upload.secure_url;
-
-        // Delete old image after successful upload
-        if (existingUser.adharCardBackImage) {
+      // Check if image is already a Cloudinary URL
+      if (isCloudinaryUrl(adharCardBackImage)) {
+        updatePayload.adharCardBackImage = adharCardBackImage;
+        if (existingUser.adharCardBackImage && existingUser.adharCardBackImage !== adharCardBackImage) {
           try {
-            const publicId = getPublicIdFromUrl(
-              existingUser.adharCardBackImage
-            );
+            const publicId = getPublicIdFromUrl(existingUser.adharCardBackImage);
             if (publicId) {
               await cloudinary.uploader.destroy(publicId);
             }
@@ -396,12 +480,46 @@ const userUpdateDetailsController = async (req, res) => {
             );
           }
         }
-      } catch (err) {
-        console.error(
-          "Error uploading adhar card back image to Cloudinary:",
-          err
-        );
-        throw new Error("Failed to upload adhar card back image");
+      } else {
+        const sizeValidation = validateImageSize(adharCardBackImage, 4);
+        if (!sizeValidation.valid) {
+          return res.status(413).json({
+            success: false,
+            message: sizeValidation.message,
+          });
+        }
+
+        try {
+          const upload = await cloudinary.uploader.upload(adharCardBackImage, {
+            timeout: 60000,
+          });
+          updatePayload.adharCardBackImage = upload.secure_url;
+
+          if (existingUser.adharCardBackImage) {
+            try {
+              const publicId = getPublicIdFromUrl(
+                existingUser.adharCardBackImage
+              );
+              if (publicId) {
+                await cloudinary.uploader.destroy(publicId);
+              }
+            } catch (err) {
+              console.error(
+                "Error deleting old adhar card back image from Cloudinary:",
+                err
+              );
+            }
+          }
+        } catch (err) {
+          console.error(
+            "Error uploading adhar card back image to Cloudinary:",
+            err
+          );
+          return res.status(500).json({
+            success: false,
+            message: err.message || "Failed to upload adhar card back image. Please try again.",
+          });
+        }
       }
     }
 

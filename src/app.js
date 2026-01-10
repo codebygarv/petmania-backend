@@ -7,7 +7,9 @@ const cors = require("cors");
 
 app.use(
   cors({
-    origin: ["http://localhost:8081"],
+    origin: process.env.FRONTEND_URL 
+      ? process.env.FRONTEND_URL.split(",") 
+      : ["http://localhost:8081"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -22,8 +24,9 @@ app.use(cookieParser());
 
 const userRoutes = require("./modules/user/user.routes");
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// Vercel has 4.5MB limit for serverless functions, but we'll allow slightly larger for base64 overhead
+app.use(express.json({ limit: "4.5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "4.5mb" }));
 
 app.use("/api/user", userRoutes);
 
