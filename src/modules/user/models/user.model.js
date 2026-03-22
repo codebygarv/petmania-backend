@@ -69,6 +69,18 @@ const userSchema = new mongoose.Schema(
     adharCardBackImage: {
       type: String,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isOtpSubmitted: {
+      type: Boolean,
+      default: false,
+    },
+    otpRequestCount: {
+      type: Number,
+      default: 0,
+    }
   },
   {
     timestamps: true,

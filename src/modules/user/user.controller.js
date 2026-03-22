@@ -56,21 +56,22 @@ const getPublicIdFromUrl = (url) => {
 // Helper function to validate image size (base64)
 const validateImageSize = (base64String, maxSizeMB = 4) => {
   if (!base64String) return { valid: true };
-  
+
   // Approximate size: base64 is ~33% larger than binary
   const sizeInBytes = (base64String.length * 3) / 4;
   const sizeInMB = sizeInBytes / (1024 * 1024);
-  
+
   if (sizeInMB > maxSizeMB) {
     return {
       valid: false,
       message: `Image size (${sizeInMB.toFixed(2)}MB) exceeds maximum allowed size (${maxSizeMB}MB)`,
     };
   }
-  
+
   return { valid: true, sizeInMB };
 };
 
+// Login Controller
 const userLoginController = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -97,6 +98,33 @@ const userLoginController = async (req, res) => {
           message: "Invalid email or password",
         },
       });
+    }
+
+
+    if (!existingUser.isOtpSubmitted) {
+      if (existingUser.otpRequestCount >= 3) {
+        return res.status(429).json({
+          success: false,
+          error: {
+            message: "Too many attempts. You have requested an OTP 3 times without verifying.",
+          },
+        });
+      }
+
+      existingUser.otpRequestCount = (existingUser.otpRequestCount || 0) + 1;
+      await existingUser.save();
+
+      // generate the otp again 
+      const otp = otpGenerate();
+      saveRegisterOtpToDB(existingUser.email, otp);
+
+      await emailService.sendMail({
+        from: `"Support Team" <${process.env.EMAIL_USER}>`,
+        to: existingUser.email,
+        subject: "OTP for Email Verification Again",
+        html: registrationOtpTemplate(existingUser, otp),
+      });
+
     }
 
     const token = generateToken({
@@ -130,6 +158,7 @@ const userLoginController = async (req, res) => {
   }
 };
 
+// Google Login Controller
 const userGoogleLoginController = async (req, res) => {
   try {
     const { accessToken } = req.body;
@@ -191,6 +220,7 @@ const userGoogleLoginController = async (req, res) => {
   }
 };
 
+// Register Controller - register user and send otp to user email
 const userRegisterController = async (req, res) => {
   try {
     const { email, password, confirmPassword } = req.body;
@@ -209,6 +239,7 @@ const userRegisterController = async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       confirmPassword: hashedPassword,
+      otpRequestCount: 1,
     });
 
     const otp = otpGenerate();
@@ -217,20 +248,17 @@ const userRegisterController = async (req, res) => {
     await emailService.sendMail({
       from: `"Support Team" <${process.env.EMAIL_USER}>`,
       to: newUser.email,
-      subject: "OTP for Password Reset",
+      subject: "OTP for Email Verification",
       html: registrationOtpTemplate(newUser, otp),
     });
 
     await newUser.save();
+
     res
       .status(201)
-
       .json({
         success: true,
         message: "User registered successfully",
-        data: {
-          user: newUser,
-        },
       });
   } catch (error) {
     console.error("Registration error:", error);
@@ -243,11 +271,21 @@ const userRegisterController = async (req, res) => {
   }
 };
 
+// Register OTP Controller - sent otp to user email
 const userRegisterOtpController = async (req, res) => {
   const { otp, email } = req.body;
 
   try {
     const existingOtp = await RegisterOtp.findOne({ email, otp });
+
+    const existingUser = await user.findOne({ email: email.toLowerCase() });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "User not found" },
+      });
+    }
 
     if (!existingOtp) {
       return res.status(400).json({
@@ -260,6 +298,11 @@ const userRegisterOtpController = async (req, res) => {
       await RegisterOtp.deleteOne({ email });
       return res.status(400).json({ success: false, message: "OTP expired" });
     }
+
+    existingUser.isOtpSubmitted = true;
+    existingUser.isVerified = true;
+    existingUser.otpRequestCount = 0;
+    await existingUser.save();
 
     const token = generateToken({ email });
 
@@ -278,6 +321,7 @@ const userRegisterOtpController = async (req, res) => {
           message: "OTP verified successfully",
           data: {
             token: token,
+            user: existingUser
           },
         })
     );
@@ -290,6 +334,7 @@ const userRegisterOtpController = async (req, res) => {
   }
 };
 
+// User Details Controller
 const userDetailsController = async (req, res) => {
   try {
     const email = req.email;
@@ -299,7 +344,22 @@ const userDetailsController = async (req, res) => {
       success: true,
       message: "Details Fetched Successfully",
       data: {
-        user: userDetails,
+        user: {
+          id: userDetails._id,
+          email: userDetails.email,
+          name: userDetails.name,
+          phoneNumber: userDetails.phoneNumber,
+          Gender: userDetails.Gender,
+          dateOfBirth: userDetails.dateOfBirth,
+          pinCode: userDetails.pinCode,
+          city: userDetails.city,
+          state: userDetails.state,
+          UserManualAddress: userDetails.UserManualAddress,
+          profileImage: userDetails.profileImage,
+          adharCardFrontImage: userDetails.adharCardFrontImage,
+          adharCardBackImage: userDetails.adharCardBackImage,
+          isVerified: true,
+        },
       },
     });
   } catch (error) {
@@ -311,6 +371,7 @@ const userDetailsController = async (req, res) => {
   }
 };
 
+// User Update Details Controller
 const userUpdateDetailsController = async (req, res) => {
   try {
     const email = req.email;
@@ -543,7 +604,7 @@ const userUpdateDetailsController = async (req, res) => {
   }
 };
 
-
+// User Forgot Password Controller
 const userForgotPasswordController = async (req, res) => {
   try {
     const { email } = req.body;
@@ -581,6 +642,8 @@ const userForgotPasswordController = async (req, res) => {
     });
   }
 };
+
+// User Forgot Password OTP Verify Controller
 
 const userForgotPasswordotpVerifyController = async (req, res) => {
   const { otp, email } = req.body;
@@ -630,6 +693,7 @@ const userForgotPasswordotpVerifyController = async (req, res) => {
   }
 };
 
+// User Forgot Password Main Controller
 const userForgotPasswordControllerMain = async (req, res) => {
   try {
     const email = req.email;
