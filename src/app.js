@@ -23,12 +23,14 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
 const userRoutes = require("./modules/user/user.routes");
+const petsRoutes = require("./modules/pets/pets.route");
 
 // Vercel has 4.5MB limit for serverless functions, but we'll allow slightly larger for base64 overhead
 app.use(express.json({ limit: "4.5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "4.5mb" }));
 
 app.use("/api/user", userRoutes);
+app.use("/api/pets", petsRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World");

@@ -1,5 +1,13 @@
 const express = require("express");
 const router = express.Router();
+const { verifyAuthMiddleware } = require("../user/user.middleware");
+const {
+  createPetController,
+  getPetsController,
+  getPetController,
+  updatePetController,
+  deletePetController
+} = require("./pets.controller");
 
 router.post("/create-pet", verifyAuthMiddleware, createPetController);
 router.get("/get-pets", verifyAuthMiddleware, getPetsController);

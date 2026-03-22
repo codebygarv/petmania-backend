@@ -4,14 +4,11 @@ const saveRegisterOtpToDB = async (email, otp) => {
   const expiresAt = Date.now() + 5 * 60 * 1000; // OTP valid for 5 mins
 
   try {
-    await OtpStore.deleteOne({ email, type: "register" });
-
-    await OtpStore.create({
-      email,
-      otp,
-      type: "register",
-      expiresAt,
-    });
+    await OtpStore.findOneAndUpdate(
+      { email },
+      { otp, expiresAt },
+      { upsert: true, new: true }
+    );
 
     console.log(`OTP saved for ${email}`);
   } catch (err) {
