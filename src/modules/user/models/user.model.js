@@ -63,6 +63,9 @@ const userSchema = new mongoose.Schema(
     profileImage: {
       type: String,
     },
+    adharCardNumber: {
+      type: String,
+    },
     adharCardFrontImage: {
       type: String,
     },

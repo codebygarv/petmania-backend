@@ -356,9 +356,12 @@ const userDetailsController = async (req, res) => {
           state: userDetails.state,
           UserManualAddress: userDetails.UserManualAddress,
           profileImage: userDetails.profileImage,
+          adharCardNumber: userDetails.adharCardNumber,
           adharCardFrontImage: userDetails.adharCardFrontImage,
           adharCardBackImage: userDetails.adharCardBackImage,
-          isVerified: true,
+          userVerified: userDetails.userVerified,
+          isVerified: userDetails.isVerified,
+          isOtpSubmitted: userDetails.isOtpSubmitted,
         },
       },
     });
@@ -593,7 +596,9 @@ const userUpdateDetailsController = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Details Updated Successfully",
-      data: updatedUser,
+      data: {
+        user: updatedUser,
+      },
     });
   } catch (error) {
     console.error("Update error:", error);
