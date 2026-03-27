@@ -300,7 +300,7 @@ const userRegisterOtpController = async (req, res) => {
     }
 
     existingUser.isOtpSubmitted = true;
-    existingUser.isVerified = true;
+    existingUser.isVerified = false;
     existingUser.otpRequestCount = 0;
     await existingUser.save();
 

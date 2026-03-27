@@ -76,6 +76,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isAdharVerified: {
+      type: Boolean,
+      default: false,
+    },
     isOtpSubmitted: {
       type: Boolean,
       default: false,
