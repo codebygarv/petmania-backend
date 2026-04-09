@@ -14,9 +14,11 @@ const {
   userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
   userDetailsController,
+  userDetailsController,
   userRegisterOtpController,
   userGoogleLoginController,
   userUpdateDetailsController,
+  userDeleteController,
 } = require("./user.controller");
 const {
   verifyOtpMiddleware,
@@ -38,6 +40,7 @@ router.post("/google", userGoogleLoginController);
 
 router.get("/details", verifyAuthMiddleware, userDetailsController);
 router.put("/updateDetails", verifyAuthMiddleware , userUpdateDetailsController);
+router.delete("/delete", verifyAuthMiddleware, userDeleteController);
 
 router.post(
   "/forgotPassword",

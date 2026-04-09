@@ -72,6 +72,14 @@ const userSchema = new mongoose.Schema(
     adharCardBackImage: {
       type: String,
     },
+    settings: {
+      notifications: {
+        push: { type: Boolean, default: true },
+        email: { type: Boolean, default: true }
+      },
+      theme: { type: String, enum: ["light", "dark", "system"], default: "system" },
+      language: { type: String, default: "en" }
+    },
     isVerified: {
       type: Boolean,
       default: false,

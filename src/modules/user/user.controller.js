@@ -742,6 +742,35 @@ const userForgotPasswordControllerMain = async (req, res) => {
   }
 };
 
+// User Delete Controller
+const userDeleteController = async (req, res) => {
+  try {
+    const email = req.email;
+    const deletedUser = await user.findOneAndDelete({ email: email?.toLowerCase() });
+
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Optional: Delete user's images from Cloudinary could be added here later
+    // if needed.
+
+    return res.status(200).json({
+      success: true,
+      message: "User account deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports = {
   userLoginController,
   userRegisterController,
@@ -752,4 +781,5 @@ module.exports = {
   userDetailsController,
   userGoogleLoginController,
   userUpdateDetailsController,
+  userDeleteController,
 };
