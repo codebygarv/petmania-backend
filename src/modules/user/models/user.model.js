@@ -95,7 +95,13 @@ const userSchema = new mongoose.Schema(
     otpRequestCount: {
       type: Number,
       default: 0,
-    }
+    },
+    favourites: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Pet",
+      },
+    ],
   },
   {
     timestamps: true,

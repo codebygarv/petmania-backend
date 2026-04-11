@@ -14,11 +14,12 @@ const {
   userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
   userDetailsController,
-  userDetailsController,
   userRegisterOtpController,
   userGoogleLoginController,
   userUpdateDetailsController,
   userDeleteController,
+  toggleFavouriteController,
+  getFavouritesController,
 } = require("./user.controller");
 const {
   verifyOtpMiddleware,
@@ -41,6 +42,9 @@ router.post("/google", userGoogleLoginController);
 router.get("/details", verifyAuthMiddleware, userDetailsController);
 router.put("/updateDetails", verifyAuthMiddleware , userUpdateDetailsController);
 router.delete("/delete", verifyAuthMiddleware, userDeleteController);
+
+router.post("/favourites/toggle", verifyAuthMiddleware, toggleFavouriteController);
+router.get("/favourites", verifyAuthMiddleware, getFavouritesController);
 
 router.post(
   "/forgotPassword",

@@ -304,7 +304,7 @@ const userRegisterOtpController = async (req, res) => {
     existingUser.otpRequestCount = 0;
     await existingUser.save();
 
-    const token = generateToken({ email });
+    const token = generateToken({ email: existingUser.email });
 
     await RegisterOtp.deleteOne({ email });
 
@@ -670,7 +670,7 @@ const userForgotPasswordotpVerifyController = async (req, res) => {
 
     await UserOtp.deleteOne({ email });
 
-    const tempToken = generateToken({ email, otpVerified: true }, "10m");
+    const tempToken = generateToken({ email: email.toLowerCase(), otpVerified: true }, "10m");
 
     return (
       res
@@ -771,6 +771,74 @@ const userDeleteController = async (req, res) => {
   }
 };
 
+// User Toggle Favourite Controller
+const toggleFavouriteController = async (req, res) => {
+  try {
+    const email = req.email;
+    const { petId } = req.body;
+
+    if (!petId) {
+      return res.status(400).json({ success: false, message: "Pet ID is required" });
+    }
+
+    const existingUser = await user.findOne({ email: email?.toLowerCase() });
+    if (!existingUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const isFavourite = existingUser.favourites.includes(petId);
+
+    if (isFavourite) {
+      existingUser.favourites = existingUser.favourites.filter(id => id.toString() !== petId.toString());
+    } else {
+      existingUser.favourites.push(petId);
+    }
+
+    await existingUser.save();
+    await existingUser.populate('favourites');
+
+    return res.status(200).json({
+      success: true,
+      message: isFavourite ? "Removed from favourites" : "Added to favourites",
+      data: {
+        favourites: existingUser.favourites,
+      },
+    });
+  } catch (error) {
+    console.error("Toggle favourite error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// User Get Favourites Controller
+const getFavouritesController = async (req, res) => {
+  try {
+    const email = req.email;
+    const existingUser = await user.findOne({ email: email?.toLowerCase() }).populate('favourites');
+
+    if (!existingUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Favourites fetched successfully",
+      data: {
+        favourites: existingUser.favourites,
+      },
+    });
+  } catch (error) {
+    console.error("Get favourites error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports = {
   userLoginController,
   userRegisterController,
@@ -782,4 +850,6 @@ module.exports = {
   userGoogleLoginController,
   userUpdateDetailsController,
   userDeleteController,
+  toggleFavouriteController,
+  getFavouritesController,
 };

@@ -7,7 +7,7 @@ const createPetController = async (req, res) => {
     const { images, name, description, age, breed, gender, color, type, pincode, city, state, country, lastVaccinationDate } = req.body;
 
     // req.email is set by verifyAuthMiddleware
-    const user = await User.findOne({ email: req.email });
+    const user = await User.findOne({ email: req.email?.toLowerCase() });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -18,7 +18,7 @@ const createPetController = async (req, res) => {
         try {
           // Verify if img has data:image prefix. If it's corrupted, this avoids sending garbage to Cloudinary.
           if (!img.startsWith("data:image")) {
-             return res.status(400).json({ success: false, message: "Invalid image format uploaded" });
+            return res.status(400).json({ success: false, message: "Invalid image format uploaded" });
           }
           const upload = await cloudinary.uploader.upload(img, { timeout: 60000 });
           uploadedImages.push(upload.secure_url);
