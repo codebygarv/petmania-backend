@@ -1,6 +1,6 @@
-# PetMania Backend — Codebase Overview
+# Adoptirx Backend — Codebase Overview
 
-This repository contains the backend for PetMania, a modular Node.js service focused on managing users and pets. The README below highlights the codebase layout, core modules (models, routes, controllers), configuration, and quick run instructions so contributors can onboard quickly.
+This repository contains the backend for Adoptirx, a modular Node.js service focused on managing users and pets. The README below highlights the codebase layout, core modules (models, routes, controllers), configuration, and quick run instructions so contributors can onboard quickly.
 
 **Repository Root**: Project entry points and global config
 - **[src/app.js](src/app.js)**: Express app configuration and middleware setup.
@@ -58,7 +58,7 @@ npm run dev
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/petmania
+DATABASE_URL=postgresql://user:password@localhost:5432/Adoptirx
 
 # JWT
 JWT_SECRET=your-secret-key
