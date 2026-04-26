@@ -742,6 +742,56 @@ const userForgotPasswordControllerMain = async (req, res) => {
   }
 };
 
+// User Reset Password Controller (from profile settings)
+const userResetPasswordController = async (req, res) => {
+  try {
+    const email = req.email;
+    const { oldPassword, password, confirmPassword } = req.body;
+
+    const existingUser = await user.findOne({ email: email.toLowerCase() });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          message: "User not found",
+        },
+      });
+    }
+
+    // Verify old password
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, existingUser.password);
+    if (!isOldPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          message: "Current password is incorrect",
+        },
+      });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    existingUser.password = hashedPassword;
+    existingUser.confirmPassword = hashedPassword;
+    existingUser.passwordChangeCount = (existingUser.passwordChangeCount || 0) + 1;
+    await existingUser.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: "Internal server error",
+      },
+    });
+  }
+};
+
 // User Delete Controller
 const userDeleteController = async (req, res) => {
   try {
@@ -846,6 +896,7 @@ module.exports = {
   userForgotPasswordController,
   userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
+  userResetPasswordController,
   userDetailsController,
   userGoogleLoginController,
   userUpdateDetailsController,

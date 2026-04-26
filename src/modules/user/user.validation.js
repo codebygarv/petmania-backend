@@ -170,6 +170,63 @@ const userForgotPasswordMainValidation = (req, res, next) => {
   }
 };
 
+const userResetPasswordValidation = (req, res, next) => {
+  try {
+    const { oldPassword, password, confirmPassword } = req.body;
+
+    if (!oldPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "please enter your old password",
+      });
+    }
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "please enter required field",
+      });
+    }
+    if (!confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "please enter required field",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "password must be at least 6 characters long",
+      });
+    }
+
+    if (confirmPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "confirm password must be at least 6 characters long",
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "passwords do not match",
+      });
+    }
+
+    if (oldPassword === password) {
+      return res.status(400).json({
+        success: false,
+        message: "new password cannot be the same as old password",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("reset password validation error:", error);
+  }
+};
+
 module.exports = {
   userLoginValidation,
   userRegisterValidation,
@@ -177,4 +234,5 @@ module.exports = {
   userForgotValidation,
   userForgotOTPValidation,
   userForgotPasswordMainValidation,
+  userResetPasswordValidation,
 };

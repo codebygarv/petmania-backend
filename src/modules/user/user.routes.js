@@ -6,6 +6,7 @@ const {
   userForgotOTPValidation,
   userForgotPasswordMainValidation,
   userRegisterOTPValidation,
+  userResetPasswordValidation,
 } = require("./user.validation");
 const {
   userLoginController,
@@ -13,6 +14,7 @@ const {
   userForgotPasswordController,
   userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
+  userResetPasswordController,
   userDetailsController,
   userRegisterOtpController,
   userGoogleLoginController,
@@ -63,6 +65,13 @@ router.post(
   verifyOtpMiddleware,
   userForgotPasswordMainValidation,
   userForgotPasswordControllerMain
+);
+
+router.post(
+  "/resetPassword",
+  verifyAuthMiddleware,
+  userResetPasswordValidation,
+  userResetPasswordController
 );
 
 module.exports = router;
