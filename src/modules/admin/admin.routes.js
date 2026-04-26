@@ -7,6 +7,7 @@ const {
   getDashboardStatsController,
   getAllUsersController,
   getUserDetailsController,
+  getUserPetsController,
   verifyUserController,
   deleteUserController,
   getAllPetsController,
@@ -26,6 +27,7 @@ router.get("/dashboard", verifyAdminMiddleware, getDashboardStatsController);
 // User management
 router.get("/users", verifyAdminMiddleware, getAllUsersController);
 router.get("/users/:id", verifyAdminMiddleware, getUserDetailsController);
+router.get("/users/:id/pets", verifyAdminMiddleware, getUserPetsController);
 router.put("/users/:id/verify", verifyAdminMiddleware, verifyUserController);
 router.delete("/users/:id", verifyAdminMiddleware, deleteUserController);
 

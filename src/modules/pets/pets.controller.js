@@ -86,6 +86,37 @@ const getPetController = async (req, res) => {
   }
 };
 
+const getMyPetsController = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.email?.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const pets = await Pet.find({ userId: user._id }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, pets });
+  } catch (error) {
+    console.error("Error fetching my pets:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+const markAdoptedController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pet = await Pet.findById(id);
+    if (!pet) {
+      return res.status(404).json({ success: false, message: "Pet not found" });
+    }
+    pet.isAdopted = true;
+    pet.adoptedDate = new Date();
+    await pet.save();
+    return res.status(200).json({ success: true, pet });
+  } catch (error) {
+    console.error("Error marking pet as adopted:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 const getPetDetailsController = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,18 +132,74 @@ const getPetDetailsController = async (req, res) => {
 };
 
 const updatePetController = async (req, res) => {
-  res.status(501).json({ message: "Not implemented yet" });
+  try {
+    const { id } = req.params;
+    const { name, description, age, breed, gender, color, type, pincode, city, state, country, lastVaccinationDate } = req.body;
+
+    const user = await User.findOne({ email: req.email?.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const pet = await Pet.findById(id);
+    if (!pet) {
+      return res.status(404).json({ success: false, message: "Pet not found" });
+    }
+    if (pet.userId.toString() !== user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Not authorized to update this pet" });
+    }
+
+    if (name !== undefined) pet.name = name;
+    if (description !== undefined) pet.description = description;
+    if (age !== undefined) pet.age = age;
+    if (breed !== undefined) pet.breed = breed;
+    if (gender !== undefined) pet.gender = gender;
+    if (color !== undefined) pet.color = color;
+    if (type !== undefined) pet.type = type;
+    if (pincode !== undefined) pet.pincode = pincode;
+    if (city !== undefined) pet.city = city;
+    if (state !== undefined) pet.state = state;
+    if (country !== undefined) pet.country = country;
+    if (lastVaccinationDate !== undefined) pet.lastVaccinationDate = lastVaccinationDate;
+
+    await pet.save();
+    return res.status(200).json({ success: true, message: "Pet updated successfully", pet });
+  } catch (error) {
+    console.error("Error updating pet:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
 
 const deletePetController = async (req, res) => {
-  res.status(501).json({ message: "Not implemented yet" });
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ email: req.email?.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const pet = await Pet.findById(id);
+    if (!pet) {
+      return res.status(404).json({ success: false, message: "Pet not found" });
+    }
+    // Check ownership
+    if (pet.userId.toString() !== user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Not authorized to delete this pet" });
+    }
+    await Pet.findByIdAndDelete(id);
+    return res.status(200).json({ success: true, message: "Pet deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting pet:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
 
 module.exports = {
   createPetController,
   getPetsController,
   getPetController,
+  getMyPetsController,
   getPetDetailsController,
+  markAdoptedController,
   updatePetController,
   deletePetController
 };

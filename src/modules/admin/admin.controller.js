@@ -221,6 +221,27 @@ const getUserDetailsController = async (req, res) => {
   }
 };
 
+// Get User's Pets
+const getUserPetsController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pets = await Pet.find({ userId: id })
+      .populate("userId", "name email avatar phoneNumber")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: { pets },
+    });
+  } catch (error) {
+    console.error("Get user pets error:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
 // Verify User
 const verifyUserController = async (req, res) => {
   try {
@@ -447,6 +468,7 @@ module.exports = {
   getDashboardStatsController,
   getAllUsersController,
   getUserDetailsController,
+  getUserPetsController,
   verifyUserController,
   deleteUserController,
   getAllPetsController,
