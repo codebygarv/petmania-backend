@@ -73,6 +73,10 @@ const petSchema = new mongoose.Schema(
       type: Date,
       required: false,
     },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

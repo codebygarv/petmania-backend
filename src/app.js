@@ -9,7 +9,7 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL 
       ? process.env.FRONTEND_URL.split(",") 
-      : ["http://localhost:8081"],
+      : ["http://localhost:8081","http://localhost:5174", "http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -24,6 +24,7 @@ app.use(cookieParser());
 
 const userRoutes = require("./modules/user/user.routes");
 const petsRoutes = require("./modules/pets/pets.route");
+const adminRoutes = require("./modules/admin/admin.routes");
 
 // Vercel has 4.5MB limit for serverless functions, but we'll allow slightly larger for base64 overhead
 app.use(express.json({ limit: "4.5mb" }));
@@ -31,6 +32,7 @@ app.use(express.urlencoded({ extended: true, limit: "4.5mb" }));
 
 app.use("/api/user", userRoutes);
 app.use("/api/pets", petsRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World");

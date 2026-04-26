@@ -86,6 +86,20 @@ const getPetController = async (req, res) => {
   }
 };
 
+const getPetDetailsController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pet = await Pet.findById(id).populate("userId", "name email avatar phoneNumber");
+    if (!pet) {
+      return res.status(404).json({ success: false, error: { message: "Pet not found" } });
+    }
+    return res.status(200).json({ success: true, data: { pet } });
+  } catch (error) {
+    console.error("Get pet details error:", error);
+    return res.status(500).json({ success: false, error: { message: "Internal server error" } });
+  }
+};
+
 const updatePetController = async (req, res) => {
   res.status(501).json({ message: "Not implemented yet" });
 };
@@ -98,6 +112,7 @@ module.exports = {
   createPetController,
   getPetsController,
   getPetController,
+  getPetDetailsController,
   updatePetController,
   deletePetController
 };
