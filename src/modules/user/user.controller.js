@@ -399,6 +399,11 @@ const userUpdateDetailsController = async (req, res) => {
 
     const updatePayload = { ...otherData };
 
+    // Handle empty dateOfBirth to prevent Mongoose CastError
+    if (updatePayload.dateOfBirth === "") {
+      updatePayload.dateOfBirth = null;
+    }
+
     /* ---------------- PROFILE IMAGE ---------------- */
     if (profileImage && profileImage !== existingUser.profileImage) {
       // Check if image is already a Cloudinary URL
@@ -600,11 +605,16 @@ const userUpdateDetailsController = async (req, res) => {
         user: updatedUser,
       },
     });
-  } catch (error) {
-    console.error("Update error:", error);
+    } catch (error) {
+    console.error("Update details error detailed:", {
+      message: error.message,
+      stack: error.stack,
+      errors: error.errors // Mongoose validation errors
+    });
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message // Sending error message to frontend for easier debugging
     });
   }
 };
