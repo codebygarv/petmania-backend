@@ -5,7 +5,20 @@ dotenv.config();
 const cors = require("cors");
 
 
-app.use(cors({ origin: "*" }));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+    ],
+  })
+);
 
 const connectionToMongoDb = require("./database/connection");
 connectionToMongoDb();
