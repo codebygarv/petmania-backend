@@ -22,7 +22,7 @@ const verifyAdminMiddleware = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!decoded.adminId || decoded.role !== "admin") {
+    if (!decoded.adminId || decoded.role !== "admin" || decoded.role !== "superadmin") {
       return res.status(403).json({
         success: false,
         error: { message: "Admin access required" },
