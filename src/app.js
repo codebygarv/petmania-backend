@@ -5,11 +5,18 @@ dotenv.config();
 const cors = require("cors");
 
 
+app.set("trust proxy", 1);
+
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow all origins to reflect back the requester's origin
+      // This is necessary when credentials: true is used, as origin cannot be '*'
+      if (!origin) return callback(null, true);
+      return callback(null, true);
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -17,6 +24,8 @@ app.use(
       "Accept",
       "Origin",
     ],
+    optionsSuccessStatus: 200,
+    maxAge: 86400, // 24 hours
   })
 );
 
