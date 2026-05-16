@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI; 
 
 const connectionToMongoDb = async () => {
   await mongoose
@@ -12,4 +12,4 @@ const connectionToMongoDb = async () => {
     });
 };
 
-module.exports = connectionToMongoDb ;
+module.exports = connectionToMongoDb;

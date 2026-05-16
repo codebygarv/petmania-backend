@@ -1,0 +1,1 @@
+mongodb://garvth0017_db_user:cvNE9olqxYrbZ23a@ac-hqus3bi-shard-00-01.ai5xk6f.mongodb.net:27017,ac-hqus3bi-shard-00-00.ai5xk6f.mongodb.net:27017,ac-hqus3bi-shard-00-02.ai5xk6f.mongodb.net:27017/?authSource=admin&replicaSet=atlas-6fxlva-shard-0&appName=Adoptrix
