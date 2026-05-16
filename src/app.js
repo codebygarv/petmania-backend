@@ -51,4 +51,11 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
+app.get("/api", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Petmania API is running",
+  });
+});
+
 module.exports = app;
