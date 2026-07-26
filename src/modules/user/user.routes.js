@@ -32,7 +32,7 @@ const router = express.Router();
 router.post("/register", userRegisterValidation, userRegisterController);
 
 router.post(
-  "/resgister/verifyOtp",
+  "/register/verifyOtp",
   userRegisterOTPValidation,
   userRegisterOtpController
 );

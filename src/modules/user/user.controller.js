@@ -296,7 +296,10 @@ const userRegisterOtpController = async (req, res) => {
 
     if (Date.now() > new Date(existingOtp.expiresAt)) {
       await RegisterOtp.deleteOne({ email });
-      return res.status(400).json({ success: false, message: "OTP expired" });
+      return res.status(400).json({
+        success: false,
+        error: { message: "OTP expired" },
+      });
     }
 
     existingUser.isOtpSubmitted = true;
