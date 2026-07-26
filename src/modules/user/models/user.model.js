@@ -33,6 +33,13 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    facebookId: {
+      type: String,
+    },
+    isFacebookUser: {
+      type: Boolean,
+      default: false,
+    },
     avatar: {
       type: String,
     },

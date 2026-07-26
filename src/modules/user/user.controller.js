@@ -192,7 +192,16 @@ const userGoogleLoginController = async (req, res) => {
         name,
         avatar: picture,
         isGoogleUser: true,
+        isVerified: true,
+        userVerified: true,
       });
+    } else if (!existingUser.googleId) {
+      existingUser.googleId = googleId;
+      existingUser.isGoogleUser = true;
+      existingUser.isVerified = true;
+      existingUser.userVerified = true;
+      if (picture && !existingUser.avatar) existingUser.avatar = picture;
+      await existingUser.save();
     }
 
     const token = jwt.sign(
@@ -210,13 +219,79 @@ const userGoogleLoginController = async (req, res) => {
           id: existingUser._id,
           email,
           name,
-          avatar: picture,
+          avatar: picture || existingUser.avatar,
         },
       },
     });
   } catch (error) {
     console.error("Google login error:", error.response?.data || error.message);
     res.status(401).json({ message: "Invalid Google token" });
+  }
+};
+
+// 🔥 Facebook Login Controller
+const userFacebookLoginController = async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+
+    if (!accessToken) {
+      return res.status(400).json({ message: "Access token is required" });
+    }
+
+    // Fetch user info from Facebook Graph API
+    const fbRes = await axios.get(
+      `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`
+    );
+
+    const { id: facebookId, email: fbEmail, name, picture } = fbRes.data;
+    const avatar = picture?.data?.url;
+    const email = fbEmail || `${facebookId}@facebook.com`;
+
+    let existingUser = await user.findOne({
+      $or: [{ facebookId }, { email }],
+    });
+
+    if (!existingUser) {
+      existingUser = await user.create({
+        email,
+        facebookId,
+        name,
+        avatar,
+        isFacebookUser: true,
+        isVerified: true,
+        userVerified: true,
+      });
+    } else if (!existingUser.facebookId) {
+      existingUser.facebookId = facebookId;
+      existingUser.isFacebookUser = true;
+      existingUser.isVerified = true;
+      existingUser.userVerified = true;
+      if (avatar && !existingUser.avatar) existingUser.avatar = avatar;
+      await existingUser.save();
+    }
+
+    const token = jwt.sign(
+      { userId: existingUser._id, email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Facebook login successful",
+      data: {
+        token,
+        user: {
+          id: existingUser._id,
+          email,
+          name: existingUser.name,
+          avatar: existingUser.avatar,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Facebook login error:", error.response?.data || error.message);
+    res.status(401).json({ message: "Invalid Facebook access token" });
   }
 };
 
@@ -912,6 +987,7 @@ module.exports = {
   userResetPasswordController,
   userDetailsController,
   userGoogleLoginController,
+  userFacebookLoginController,
   userUpdateDetailsController,
   userDeleteController,
   toggleFavouriteController,
