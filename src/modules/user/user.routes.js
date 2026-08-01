@@ -38,10 +38,44 @@ router.post(
   userRegisterOtpController
 );
 
-// router.post("/login",  verifyOtpMiddleware, userLoginValidation, userLoginController);  // need to check this
 router.post("/login", userLoginValidation, userLoginController);
 router.post("/google", userGoogleLoginController);
 router.post("/facebook", userFacebookLoginController);
+
+// Google OAuth Relay Callback Endpoint
+router.get("/auth/google/callback", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Google Authentication - PetMania</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #121212; color: #fff; text-align: center; }
+          .card { padding: 30px; border-radius: 16px; background: #1e1e1e; box-shadow: 0 4px 20px rgba(0,0,0,0.5); max-width: 90%; }
+          .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #f97316; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          h2 { margin: 0 0 10px; font-size: 20px; }
+          p { color: #888; font-size: 14px; margin: 0; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="spinner"></div>
+          <h2>Completing Sign In...</h2>
+          <p>Redirecting back to PetMania app.</p>
+        </div>
+        <script>
+          const hash = window.location.hash;
+          if (hash) {
+            // Forward back to app custom scheme
+            window.location.href = "petmania://google-auth" + hash;
+          }
+        </script>
+      </body>
+    </html>
+  `);
+});
 
 router.get("/details", verifyAuthMiddleware, userDetailsController);
 router.put("/updateDetails", verifyAuthMiddleware , userUpdateDetailsController);
