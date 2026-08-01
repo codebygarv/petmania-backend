@@ -57,6 +57,7 @@ router.get("/auth/google/callback", (req, res) => {
           @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
           h2 { margin: 0 0 10px; font-size: 20px; }
           p { color: #888; font-size: 14px; margin: 0; }
+          .btn { display: inline-block; margin-top: 20px; background: #f97316; color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; }
         </style>
       </head>
       <body>
@@ -64,13 +65,37 @@ router.get("/auth/google/callback", (req, res) => {
           <div class="spinner"></div>
           <h2>Completing Sign In...</h2>
           <p>Redirecting back to PetMania app.</p>
+          <a id="returnBtn" href="#" class="btn" style="display:none;">Tap to Return to App</a>
         </div>
         <script>
-          const hash = window.location.hash;
-          if (hash) {
-            // Forward back to app custom scheme
-            window.location.href = "petmania://google-auth" + hash;
-          }
+          (function() {
+            try {
+              const rawHash = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : window.location.hash;
+              const params = new URLSearchParams(rawHash || window.location.search);
+              const state = params.get('state');
+              
+              let returnBase = "petmania://google-auth";
+              if (state) {
+                returnBase = decodeURIComponent(state);
+              }
+              
+              const separator = returnBase.includes('#') ? '&' : '#';
+              const fullRedirect = returnBase + (rawHash ? separator + rawHash : '');
+              
+              const btn = document.getElementById('returnBtn');
+              if (btn) {
+                btn.href = fullRedirect;
+                btn.style.display = 'inline-block';
+              }
+              
+              // Attempt automatic redirection
+              setTimeout(function() {
+                window.location.href = fullRedirect;
+              }, 100);
+            } catch(e) {
+              console.error(e);
+            }
+          })();
         </script>
       </body>
     </html>
