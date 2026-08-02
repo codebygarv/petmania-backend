@@ -20,7 +20,6 @@ const {
   userResendOtpController,
   userGoogleLoginController,
   googleAuthCallbackController,
-  userFacebookLoginController,
   userUpdateDetailsController,
   userDeleteController,
   toggleFavouriteController,
@@ -44,7 +43,6 @@ router.post("/resend-otp", userResendOtpController);
 
 router.post("/login", userLoginValidation, userLoginController);
 router.post("/google", userGoogleLoginController);
-router.post("/facebook", userFacebookLoginController);
 
 // Google OAuth Relay Callback Endpoint
 router.get("/auth/google/callback", googleAuthCallbackController);
