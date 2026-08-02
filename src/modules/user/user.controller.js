@@ -248,7 +248,7 @@ const googleAuthCallbackController = async (req, res) => {
     const clientId =
       process.env.GOOGLE_WEB_CLIENT_ID ||
       process.env.GOOGLE_CLIENT_ID ||
-      "425077338248-3c06vuh15ppqblnb3gm32aru289v89eb.apps.googleusercontent.com";
+      "531711523042-6lbuv5loo95mgqej29slctctlk3i8h3q.apps.googleusercontent.com";
     const clientSecret =
       process.env.GOOGLE_WEB_CLIENT_SECRET ||
       process.env.GOOGLE_CLIENT_SECRET ||
