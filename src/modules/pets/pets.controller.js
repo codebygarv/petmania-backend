@@ -12,6 +12,17 @@ const createPetController = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    if (!user.isVerified) {
+      return res.status(403).json({ success: false, message: "Please verify your email before adding a pet" });
+    }
+
+    if (!user.isAdharVerified && !user.userVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Identity / Aadhaar verification is required before you can create a pet listing. Please complete profile verification."
+      });
+    }
+
     const uploadedImages = [];
     if (images && images.length > 0) {
       for (const img of images) {
