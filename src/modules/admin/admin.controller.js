@@ -373,7 +373,7 @@ const deleteUserController = async (req, res) => {
 // Get All Pets
 const getAllPetsController = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, isApproved, city } = req.query;
+    const { page = 1, limit = 10, search, isApproved, city, type } = req.query;
 
     const query = {};
     if (search) {
@@ -388,6 +388,9 @@ const getAllPetsController = async (req, res) => {
     }
     if (city) {
       query.city = { $regex: city, $options: "i" };
+    }
+    if (type && type !== "all") {
+      query.type = type.toLowerCase();
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);

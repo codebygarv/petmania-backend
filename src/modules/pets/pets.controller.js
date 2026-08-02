@@ -68,12 +68,33 @@ const createPetController = async (req, res) => {
 
 const getPetsController = async (req, res) => {
   try {
-    const { city } = req.query;
-    let query = { isAdopted: false };
+    const { city, search, type, gender, minAge, maxAge } = req.query;
+    let query = { isAdopted: false, isApproved: true };
 
     if (city) {
       // Case-insensitive regex match for city
       query.city = { $regex: new RegExp(city, "i") };
+    }
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { breed: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (type && type !== "all") {
+      query.type = type.toLowerCase();
+    }
+
+    if (gender && gender !== "all" && gender !== "any") {
+      query.gender = gender.toLowerCase();
+    }
+
+    if (minAge !== undefined || maxAge !== undefined) {
+      query.age = {};
+      if (minAge !== undefined && minAge !== "") query.age.$gte = Number(minAge);
+      if (maxAge !== undefined && maxAge !== "") query.age.$lte = Number(maxAge);
     }
 
     const pets = await Pet.find(query).populate("userId", "name avatar email phoneNumber").sort({ createdAt: -1 });
