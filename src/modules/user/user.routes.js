@@ -17,6 +17,7 @@ const {
   userResetPasswordController,
   userDetailsController,
   userRegisterOtpController,
+  userResendOtpController,
   userGoogleLoginController,
   googleAuthCallbackController,
   userFacebookLoginController,
@@ -38,6 +39,8 @@ router.post(
   userRegisterOTPValidation,
   userRegisterOtpController
 );
+
+router.post("/resend-otp", userResendOtpController);
 
 router.post("/login", userLoginValidation, userLoginController);
 router.post("/google", userGoogleLoginController);
