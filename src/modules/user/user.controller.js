@@ -229,144 +229,106 @@ const userGoogleLoginController = async (req, res) => {
   }
 };
 
-// Google OAuth Relay Callback Controller with Dynamic Theme Support
-const googleAuthCallbackController = (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <title>Google Authentication - PetMania</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          :root {
-            --bg: #FFFFFF;
-            --card-bg: #F9F9F9;
-            --text-primary: #1C1C1C;
-            --text-secondary: #6E6E6E;
-            --accent-orange: #F97316;
-            --accent-btn: #E0583D;
-            --border: #E5E5E5;
-            --shadow: rgba(0, 0, 0, 0.08);
-          }
-          @media (prefers-color-scheme: dark) {
-            :root {
-              --bg: #121212;
-              --card-bg: #1E1E1E;
-              --text-primary: #EDEDED;
-              --text-secondary: #9A9A9A;
-              --accent-orange: #FB923C;
-              --accent-btn: #E0583D;
-              --border: #2C2C2C;
-              --shadow: rgba(0, 0, 0, 0.5);
-            }
-          }
-          * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-          }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: var(--bg);
-            color: var(--text-primary);
-            transition: background-color 0.3s ease, color 0.3s ease;
-            padding: 20px;
-          }
-          .card {
-            padding: 36px 28px;
-            border-radius: 20px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 30px var(--shadow);
-            max-width: 380px;
-            width: 100%;
-            text-align: center;
-          }
-          .spinner {
-            width: 44px;
-            height: 44px;
-            border: 4px solid var(--border);
-            border-top: 4px solid var(--accent-orange);
-            border-radius: 50%;
-            animation: spin 0.9s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
-            margin: 0 auto 20px;
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          h2 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-          }
-          p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-          }
-          .btn {
-            display: inline-block;
-            margin-top: 24px;
-            background-color: var(--accent-btn);
-            color: #FFFFFF;
-            padding: 12px 24px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 15px;
-            transition: opacity 0.2s ease;
-          }
-          .btn:active {
-            opacity: 0.85;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <div class="spinner"></div>
-          <h2>Completing Sign In...</h2>
-          <p>Redirecting you back to the PetMania app.</p>
-          <a id="returnBtn" href="#" class="btn" style="display:none;">Tap to Return to App</a>
-        </div>
-        <script>
-          (function() {
-            try {
-              const rawHash = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : window.location.hash;
-              const params = new URLSearchParams(rawHash || window.location.search);
-              const state = params.get('state');
-              
-              let returnBase = "petmania://google-auth";
-              if (state) {
-                returnBase = decodeURIComponent(state);
-              }
-              
-              const separator = returnBase.includes('#') ? '&' : '#';
-              const fullRedirect = returnBase + (rawHash ? separator + rawHash : '');
-              
-              const btn = document.getElementById('returnBtn');
-              if (btn) {
-                btn.href = fullRedirect;
-                btn.style.display = 'inline-block';
-              }
-              
-              setTimeout(function() {
-                window.location.href = fullRedirect;
-              }, 100);
-            } catch(e) {
-              console.error(e);
-            }
-          })();
-        </script>
-      </body>
-    </html>
-  `);
+// Google OAuth Authorization Code Callback Controller (Pure Server 302 Redirect - Zero HTML)
+const googleAuthCallbackController = async (req, res) => {
+  const returnBase = req.query.state
+    ? decodeURIComponent(req.query.state)
+    : "petmania://google-auth";
+
+  try {
+    const { code, error } = req.query;
+
+    if (error || !code) {
+      console.error("[Google OAuth Callback] Error query received:", error || "No code");
+      const separator = returnBase.includes("#") ? "&" : "#";
+      return res.redirect(302, `${returnBase}${separator}error=${encodeURIComponent(error || "Authorization code missing")}`);
+    }
+
+    const clientId =
+      process.env.GOOGLE_WEB_CLIENT_ID ||
+      process.env.GOOGLE_CLIENT_ID ||
+      "531711523042-6lbuv5loo95mgqej29slctctlk3i8h3q.apps.googleusercontent.com";
+    const clientSecret =
+      process.env.GOOGLE_WEB_CLIENT_SECRET ||
+      process.env.GOOGLE_CLIENT_SECRET ||
+      "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";
+    const redirectUri = "https://petmania-backend-delta.vercel.app/api/user/auth/google/callback";
+
+    // 1. Exchange authorization code for Google access token
+    const tokenResponse = await axios.post(
+      "https://oauth2.googleapis.com/token",
+      new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }).toString(),
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    // 2. Fetch User Profile from Google
+    const profileResponse = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+
+    const { sub: googleId, email, name, picture } = profileResponse.data;
+
+    if (!email) {
+      const separator = returnBase.includes("#") ? "&" : "#";
+      return res.redirect(302, `${returnBase}${separator}error=no_email`);
+    }
+
+    // 3. Find or Create User in MongoDB
+    let existingUser = await user.findOne({ email });
+
+    if (!existingUser) {
+      existingUser = await user.create({
+        email,
+        googleId,
+        name: name || "User",
+        avatar: picture,
+        isGoogleUser: true,
+        isVerified: true,
+        userVerified: true,
+      });
+    } else if (!existingUser.googleId) {
+      existingUser.googleId = googleId;
+      existingUser.isGoogleUser = true;
+      existingUser.isVerified = true;
+      existingUser.userVerified = true;
+      if (picture && !existingUser.avatar) existingUser.avatar = picture;
+      await existingUser.save();
+    }
+
+    // 4. Generate PetMania JWT Token
+    const token = jwt.sign(
+      { userId: existingUser._id, email: existingUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    const userPayload = encodeURIComponent(
+      JSON.stringify({
+        id: existingUser._id,
+        email: existingUser.email,
+        name: existingUser.name,
+        avatar: existingUser.avatar,
+      })
+    );
+
+    // 5. Direct HTTP 302 redirect back into the mobile app (Zero HTML rendered)
+    const separator = returnBase.includes("#") ? "&" : "#";
+    return res.redirect(302, `${returnBase}${separator}token=${token}&user=${userPayload}`);
+  } catch (err) {
+    console.error("[Google OAuth Callback Exception]:", err?.response?.data || err.message);
+    const separator = returnBase.includes("#") ? "&" : "#";
+    return res.redirect(302, `${returnBase}${separator}error=login_failed`);
+  }
 };
 
 // 🔥 Facebook Login Controller
