@@ -587,6 +587,27 @@ const userUpdateDetailsController = async (req, res) => {
 
     const updatePayload = { ...otherData };
 
+    // Prevent client from manipulating verification and authentication flags
+    delete updatePayload.isVerified;
+    delete updatePayload.isAdharVerified;
+    delete updatePayload.userVerified;
+    delete updatePayload.isOtpSubmitted;
+    delete updatePayload.password;
+    delete updatePayload.confirmPassword;
+    delete updatePayload.googleId;
+    delete updatePayload.facebookId;
+
+    // If Aadhaar number or images are being submitted/updated, reset verification status for admin review
+    const isAadhaarModified =
+      (adharCardFrontImage && adharCardFrontImage !== existingUser.adharCardFrontImage) ||
+      (adharCardBackImage && adharCardBackImage !== existingUser.adharCardBackImage) ||
+      (updatePayload.adharCardNumber && updatePayload.adharCardNumber !== existingUser.adharCardNumber);
+
+    if (isAadhaarModified) {
+      updatePayload.isAdharVerified = false;
+      updatePayload.userVerified = false;
+    }
+
     // Handle empty dateOfBirth to prevent Mongoose CastError
     if (updatePayload.dateOfBirth === "") {
       updatePayload.dateOfBirth = null;
