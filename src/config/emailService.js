@@ -1,18 +1,26 @@
 const nodemailer = require('nodemailer');
 
-const emailUser = (process.env.EMAIL_USER || 'garvthakral90@gmail.com').trim();
-const emailPass = (process.env.EMAIL_PASS || 'lncjekhxlnemikut').replace(/\s+/g, '');
+const getTransporter = () => {
+    const rawUser = process.env.EMAIL_USER || 'garvthakral90@gmail.com';
+    const rawPass = process.env.EMAIL_PASS || 'lncjekhxlnemikut';
 
-const emailService = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: emailUser,
-        pass: emailPass,
-    },
-});
+    const emailUser = String(rawUser).replace(/^["']|["']$/g, '').trim();
+    const emailPass = String(rawPass).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();
+
+    console.log(`[EmailService] Configured user: ${emailUser}, passLength: ${emailPass.length}, passPrefix: ${emailPass.slice(0, 4)}...`);
+
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: emailUser,
+            pass: emailPass,
+        },
+    });
+};
+
+const emailService = getTransporter();
 
 module.exports = {
     emailService,
+    getTransporter,
 };
