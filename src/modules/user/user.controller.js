@@ -548,6 +548,7 @@ const userDetailsController = async (req, res) => {
           adharCardBackImage: userDetails.adharCardBackImage,
           userVerified: userDetails.userVerified,
           isVerified: userDetails.isVerified,
+          isAdharVerified: userDetails.isAdharVerified,
           isOtpSubmitted: userDetails.isOtpSubmitted,
         },
       },
