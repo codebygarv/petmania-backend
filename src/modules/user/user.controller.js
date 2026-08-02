@@ -193,13 +193,13 @@ const userGoogleLoginController = async (req, res) => {
         avatar: picture,
         isGoogleUser: true,
         isVerified: true,
-        userVerified: true,
+        isAdharVerified: false,
+        userVerified: false,
       });
     } else if (!existingUser.googleId) {
       existingUser.googleId = googleId;
       existingUser.isGoogleUser = true;
       existingUser.isVerified = true;
-      existingUser.userVerified = true;
       if (picture && !existingUser.avatar) existingUser.avatar = picture;
       await existingUser.save();
     }
@@ -297,13 +297,13 @@ const googleAuthCallbackController = async (req, res) => {
         avatar: picture,
         isGoogleUser: true,
         isVerified: true,
-        userVerified: true,
+        isAdharVerified: false,
+        userVerified: false,
       });
     } else if (!existingUser.googleId) {
       existingUser.googleId = googleId;
       existingUser.isGoogleUser = true;
       existingUser.isVerified = true;
-      existingUser.userVerified = true;
       if (picture && !existingUser.avatar) existingUser.avatar = picture;
       await existingUser.save();
     }
@@ -368,13 +368,13 @@ const userFacebookLoginController = async (req, res) => {
         avatar,
         isFacebookUser: true,
         isVerified: true,
-        userVerified: true,
+        isAdharVerified: false,
+        userVerified: false,
       });
     } else if (!existingUser.facebookId) {
       existingUser.facebookId = facebookId;
       existingUser.isFacebookUser = true;
       existingUser.isVerified = true;
-      existingUser.userVerified = true;
       if (avatar && !existingUser.avatar) existingUser.avatar = avatar;
       await existingUser.save();
     }
