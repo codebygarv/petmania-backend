@@ -248,11 +248,11 @@ const googleAuthCallbackController = async (req, res) => {
     const clientId =
       process.env.GOOGLE_WEB_CLIENT_ID ||
       process.env.GOOGLE_CLIENT_ID ||
-      "531711523042-6lbuv5loo95mgqej29slctctlk3i8h3q.apps.googleusercontent.com";
+      "425077338248-3c06vuh15ppqblnb3gm32aru289v89eb.apps.googleusercontent.com";
     const clientSecret =
       process.env.GOOGLE_WEB_CLIENT_SECRET ||
       process.env.GOOGLE_CLIENT_SECRET ||
-      "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";
+      "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";
     const redirectUri = "https://petmania-backend-delta.vercel.app/api/user/auth/google/callback";
 
     console.log("[Google OAuth Callback] Exchanging code with client_id:", clientId);
