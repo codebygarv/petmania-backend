@@ -8,6 +8,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const otpGenerate = require("../../config/otpGenerate");
 const saveOtpToDB = require("../../config/saveOtpToDB");
+const connectionToMongoDb = require("../../database/connection");
 const db = require("../../database/sqlConnection");
 const saveRegisterOtpToDB = require("../../config/saveRegisterOtpToDB");
 const {
@@ -183,7 +184,9 @@ const userGoogleLoginController = async (req, res) => {
       return res.status(401).json({ message: "Invalid Google access token" });
     }
 
-    let existingUser = await user.findOne({ email });
+    await connectionToMongoDb();
+    const normalizedEmail = email.toLowerCase().trim();
+    let existingUser = await user.findOne({ email: normalizedEmail });
 
     if (!existingUser) {
       existingUser = await user.create({
@@ -287,7 +290,9 @@ const googleAuthCallbackController = async (req, res) => {
     }
 
     // 3. Find or Create User in MongoDB
-    let existingUser = await user.findOne({ email });
+    await connectionToMongoDb();
+    const normalizedEmail = email.toLowerCase().trim();
+    let existingUser = await user.findOne({ email: normalizedEmail });
 
     if (!existingUser) {
       existingUser = await user.create({
@@ -354,8 +359,9 @@ const userFacebookLoginController = async (req, res) => {
 
     const { id: facebookId, email: fbEmail, name, picture } = fbRes.data;
     const avatar = picture?.data?.url;
-    const email = fbEmail || `${facebookId}@facebook.com`;
+    const email = (fbEmail || `${facebookId}@facebook.com`).toLowerCase().trim();
 
+    await connectionToMongoDb();
     let existingUser = await user.findOne({
       $or: [{ facebookId }, { email }],
     });
