@@ -1,10 +1,15 @@
 const nodemailer = require('nodemailer');
 
+const emailUser = (process.env.EMAIL_USER || 'garvthakral90@gmail.com').trim();
+const emailPass = (process.env.EMAIL_PASS || 'lncjekhxlnemikut').replace(/\s+/g, '');
+
 const emailService = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: emailUser,
+        pass: emailPass,
     },
 });
 

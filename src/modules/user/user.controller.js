@@ -117,10 +117,11 @@ const userLoginController = async (req, res) => {
 
       // generate the otp again 
       const otp = otpGenerate();
-      saveRegisterOtpToDB(existingUser.email, otp);
+      await saveRegisterOtpToDB(existingUser.email, otp);
 
+      const emailSender = (process.env.EMAIL_USER || 'garvthakral90@gmail.com').trim();
       await emailService.sendMail({
-        from: `"Support Team" <${process.env.EMAIL_USER}>`,
+        from: `"Support Team" <${emailSender}>`,
         to: existingUser.email,
         subject: "OTP for Email Verification Again",
         html: registrationOtpTemplate(existingUser, otp),
@@ -433,10 +434,11 @@ const userRegisterController = async (req, res) => {
     });
 
     const otp = otpGenerate();
-    saveRegisterOtpToDB(newUser.email, otp);
+    await saveRegisterOtpToDB(newUser.email, otp);
 
+    const emailSender = (process.env.EMAIL_USER || 'garvthakral90@gmail.com').trim();
     await emailService.sendMail({
-      from: `"Support Team" <${process.env.EMAIL_USER}>`,
+      from: `"Support Team" <${emailSender}>`,
       to: newUser.email,
       subject: "OTP for Email Verification",
       html: registrationOtpTemplate(newUser, otp),
@@ -549,12 +551,13 @@ const userResendOtpController = async (req, res) => {
     }
 
     const otp = otpGenerate();
+    const emailSender = (process.env.EMAIL_USER || 'garvthakral90@gmail.com').trim();
 
     if (type === "forgot-password") {
-      saveOtpToDB(normalizedEmail, otp);
+      await saveOtpToDB(normalizedEmail, otp);
 
       await emailService.sendMail({
-        from: `"Support Team" <${process.env.EMAIL_USER}>`,
+        from: `"Support Team" <${emailSender}>`,
         to: normalizedEmail,
         subject: "OTP for Password Reset",
         html: otpGenerateTemplate(existingUser, otp),
@@ -570,10 +573,10 @@ const userResendOtpController = async (req, res) => {
       existingUser.otpRequestCount = (existingUser.otpRequestCount || 0) + 1;
       await existingUser.save();
 
-      saveRegisterOtpToDB(normalizedEmail, otp);
+      await saveRegisterOtpToDB(normalizedEmail, otp);
 
       await emailService.sendMail({
-        from: `"Support Team" <${process.env.EMAIL_USER}>`,
+        from: `"Support Team" <${emailSender}>`,
         to: normalizedEmail,
         subject: "OTP for Email Verification",
         html: registrationOtpTemplate(existingUser, otp),
@@ -916,10 +919,11 @@ const userForgotPasswordController = async (req, res) => {
       });
     }
     const otp = otpGenerate();
-    saveOtpToDB(existingUser.email, otp);
+    await saveOtpToDB(existingUser.email, otp);
 
+    const emailSender = (process.env.EMAIL_USER || 'garvthakral90@gmail.com').trim();
     await emailService.sendMail({
-      from: `"Support Team" <${process.env.EMAIL_USER}>`,
+      from: `"Support Team" <${emailSender}>`,
       to: existingUser.email,
       subject: "OTP for Password Reset",
       html: otpGenerateTemplate(existingUser, otp),
