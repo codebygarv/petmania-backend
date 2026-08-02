@@ -455,14 +455,15 @@ const userRegisterController = async (req, res) => {
   }
 };
 
-// Register OTP Controller - sent otp to user email
+// Register OTP Controller - verify otp sent to user email
 const userRegisterOtpController = async (req, res) => {
   const { otp, email } = req.body;
 
   try {
-    const existingOtp = await RegisterOtp.findOne({ email, otp });
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
+    const existingOtp = await RegisterOtp.findOne({ email: normalizedEmail, otp });
 
-    const existingUser = await user.findOne({ email: email.toLowerCase() });
+    const existingUser = await user.findOne({ email: normalizedEmail });
 
     if (!existingUser) {
       return res.status(404).json({
@@ -479,7 +480,7 @@ const userRegisterOtpController = async (req, res) => {
     }
 
     if (Date.now() > new Date(existingOtp.expiresAt)) {
-      await RegisterOtp.deleteOne({ email });
+      await RegisterOtp.deleteOne({ email: normalizedEmail });
       return res.status(400).json({
         success: false,
         error: { message: "OTP expired" },
@@ -487,34 +488,99 @@ const userRegisterOtpController = async (req, res) => {
     }
 
     existingUser.isOtpSubmitted = true;
-    existingUser.isVerified = false;
+    existingUser.isVerified = true;
     existingUser.otpRequestCount = 0;
     await existingUser.save();
 
-    const token = generateToken({ email: existingUser.email });
+    const token = generateToken({
+      userId: existingUser._id,
+      email: existingUser.email,
+    });
 
-    await RegisterOtp.deleteOne({ email });
+    await RegisterOtp.deleteOne({ email: normalizedEmail });
 
     return (
       res
         .status(200)
-        // .cookie("token", token, {
-        //   httpOnly: true,
-        //   secure: true,
-        //   sameSite: "strict",
-        // })
         .json({
           success: true,
           message: "OTP verified successfully",
           data: {
             token: token,
-            user: existingUser
+            user: existingUser,
           },
         })
     );
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+// Resend OTP Controller - handles resend for both registration and forgot-password flows
+const userResendOtpController = async (req, res) => {
+  try {
+    const { email, type } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Email is required" },
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await user.findOne({ email: normalizedEmail });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "User with this email does not exist" },
+      });
+    }
+
+    const otp = otpGenerate();
+
+    if (type === "forgot-password") {
+      saveOtpToDB(normalizedEmail, otp);
+
+      await emailService.sendMail({
+        from: `"Support Team" <${process.env.EMAIL_USER}>`,
+        to: normalizedEmail,
+        subject: "OTP for Password Reset",
+        html: otpGenerateTemplate(existingUser, otp),
+      });
+    } else {
+      if ((existingUser.otpRequestCount || 0) >= 5) {
+        return res.status(429).json({
+          success: false,
+          error: { message: "Too many attempts. Please try again later." },
+        });
+      }
+
+      existingUser.otpRequestCount = (existingUser.otpRequestCount || 0) + 1;
+      await existingUser.save();
+
+      saveRegisterOtpToDB(normalizedEmail, otp);
+
+      await emailService.sendMail({
+        from: `"Support Team" <${process.env.EMAIL_USER}>`,
+        to: normalizedEmail,
+        subject: "OTP for Email Verification",
+        html: registrationOtpTemplate(existingUser, otp),
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "A new OTP has been sent to your email",
+    });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    return res.status(500).json({
       success: false,
       error: { message: "Internal server error" },
     });
@@ -832,7 +898,8 @@ const userUpdateDetailsController = async (req, res) => {
 const userForgotPasswordController = async (req, res) => {
   try {
     const { email } = req.body;
-    const existingUser = await user.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
+    const existingUser = await user.findOne({ email: normalizedEmail });
 
     if (!existingUser) {
       return res.status(404).json({
@@ -873,7 +940,8 @@ const userForgotPasswordotpVerifyController = async (req, res) => {
   const { otp, email } = req.body;
 
   try {
-    const existingOtp = await UserOtp.findOne({ email, otp });
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
+    const existingOtp = await UserOtp.findOne({ email: normalizedEmail, otp });
 
     if (!existingOtp) {
       return res.status(400).json({
@@ -883,23 +951,17 @@ const userForgotPasswordotpVerifyController = async (req, res) => {
     }
 
     if (Date.now() > new Date(existingOtp.expiresAt)) {
-      await UserOtp.deleteOne({ email });
+      await UserOtp.deleteOne({ email: normalizedEmail });
       return res.status(400).json({ success: false, message: "OTP expired" });
     }
 
-    await UserOtp.deleteOne({ email });
+    await UserOtp.deleteOne({ email: normalizedEmail });
 
-    const tempToken = generateToken({ email: email.toLowerCase(), otpVerified: true }, "10m");
+    const tempToken = generateToken({ email: normalizedEmail, otpVerified: true }, "10m");
 
     return (
       res
         .status(200)
-        // .cookie("otpToken", tempToken, {
-        //   httpOnly: true,
-        //   secure: true,
-        //   sameSite: "strict",
-        //   maxAge: 5 * 60 * 1000,
-        // })
         .json({
           success: true,
           message: "OTP verified successfully",
@@ -1112,6 +1174,7 @@ module.exports = {
   userLoginController,
   userRegisterController,
   userRegisterOtpController,
+  userResendOtpController,
   userForgotPasswordController,
   userForgotPasswordotpVerifyController,
   userForgotPasswordControllerMain,
