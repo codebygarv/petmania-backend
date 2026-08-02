@@ -557,6 +557,9 @@ const userDetailsController = async (req, res) => {
           userVerified: userDetails.userVerified,
           isVerified: userDetails.isVerified,
           isAdharVerified: userDetails.isAdharVerified,
+          verificationStatus: userDetails.verificationStatus || (userDetails.isAdharVerified || userDetails.userVerified ? "verified" : userDetails.adharCardFrontImage ? "pending" : "unverified"),
+          verificationRejectReason: userDetails.verificationRejectReason || null,
+          verificationReviewedAt: userDetails.verificationReviewedAt || null,
           isOtpSubmitted: userDetails.isOtpSubmitted,
         },
       },
@@ -599,21 +602,38 @@ const userUpdateDetailsController = async (req, res) => {
     delete updatePayload.isVerified;
     delete updatePayload.isAdharVerified;
     delete updatePayload.userVerified;
+    delete updatePayload.verificationStatus;
+    delete updatePayload.verificationRejectReason;
+    delete updatePayload.verificationReviewedAt;
     delete updatePayload.isOtpSubmitted;
     delete updatePayload.password;
     delete updatePayload.confirmPassword;
     delete updatePayload.googleId;
     delete updatePayload.facebookId;
 
-    // If Aadhaar number or images are being submitted/updated, reset verification status for admin review
+    // If Aadhaar number or images are being submitted/updated, or user is resubmitting after recheck/rejection, reset verification status for admin review
     const isAadhaarModified =
       (adharCardFrontImage && adharCardFrontImage !== existingUser.adharCardFrontImage) ||
       (adharCardBackImage && adharCardBackImage !== existingUser.adharCardBackImage) ||
       (updatePayload.adharCardNumber && updatePayload.adharCardNumber !== existingUser.adharCardNumber);
 
-    if (isAadhaarModified) {
+    const hasAadhaarData =
+      Boolean(updatePayload.adharCardNumber ||
+      existingUser.adharCardNumber ||
+      adharCardFrontImage ||
+      existingUser.adharCardFrontImage);
+
+    if (
+      isAadhaarModified ||
+      existingUser.verificationStatus === "recheck_requested" ||
+      existingUser.verificationStatus === "rejected"
+    ) {
       updatePayload.isAdharVerified = false;
       updatePayload.userVerified = false;
+      if (hasAadhaarData) {
+        updatePayload.verificationStatus = "pending";
+        updatePayload.verificationRejectReason = null;
+      }
     }
 
     // Handle empty dateOfBirth to prevent Mongoose CastError

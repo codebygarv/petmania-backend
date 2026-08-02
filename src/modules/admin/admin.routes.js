@@ -9,6 +9,7 @@ const {
   getUserDetailsController,
   getUserPetsController,
   verifyUserController,
+  requestUserRecheckController,
   deleteUserController,
   getAllPetsController,
   getPetDetailsController,
@@ -29,6 +30,7 @@ router.get("/users", verifyAdminMiddleware, getAllUsersController);
 router.get("/users/:id", verifyAdminMiddleware, getUserDetailsController);
 router.get("/users/:id/pets", verifyAdminMiddleware, getUserPetsController);
 router.put("/users/:id/verify", verifyAdminMiddleware, verifyUserController);
+router.put("/users/:id/recheck", verifyAdminMiddleware, requestUserRecheckController);
 router.delete("/users/:id", verifyAdminMiddleware, deleteUserController);
 
 // Pet management

@@ -95,6 +95,19 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    verificationStatus: {
+      type: String,
+      enum: ["unverified", "pending", "verified", "rejected", "recheck_requested"],
+      default: "unverified",
+    },
+    verificationRejectReason: {
+      type: String,
+      default: null,
+    },
+    verificationReviewedAt: {
+      type: Date,
+      default: null,
+    },
     isOtpSubmitted: {
       type: Boolean,
       default: false,

@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../user/models/user.model");
 const Pet = require("../pets/models/pets.models");
+const { emailService } = require("../../config/emailService");
+const { verificationRecheckTemplate } = require("../../config/emailTemplate/VerificationRecheckTemplate");
 
 // Generate JWT Token
 const generateToken = (payload) => {
@@ -246,7 +248,7 @@ const getUserPetsController = async (req, res) => {
 const verifyUserController = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isVerified, isAdharVerified, userVerified } = req.body;
+    const { isVerified, isAdharVerified, userVerified, verificationStatus } = req.body;
 
     const user = await User.findById(id);
     if (!user) {
@@ -260,6 +262,14 @@ const verifyUserController = async (req, res) => {
     if (isAdharVerified !== undefined) user.isAdharVerified = isAdharVerified;
     if (userVerified !== undefined) user.userVerified = userVerified;
 
+    if (verificationStatus !== undefined) {
+      user.verificationStatus = verificationStatus;
+    } else if (user.isAdharVerified || user.userVerified) {
+      user.verificationStatus = "verified";
+      user.verificationRejectReason = null;
+    }
+
+    user.verificationReviewedAt = new Date();
     await user.save();
 
     return res.status(200).json({
@@ -269,6 +279,64 @@ const verifyUserController = async (req, res) => {
     });
   } catch (error) {
     console.error("Verify user error:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+// Request User Recheck (Verification Reject / Recheck with Reason & Email)
+const requestUserRecheckController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "User not found" },
+      });
+    }
+
+    const recheckReason =
+      reason && reason.trim().length > 0
+        ? reason.trim()
+        : "Please review and re-upload clear identity verification documents.";
+
+    user.isAdharVerified = false;
+    user.userVerified = false;
+    user.verificationStatus = "recheck_requested";
+    user.verificationRejectReason = recheckReason;
+    user.verificationReviewedAt = new Date();
+
+    await user.save();
+
+    // Send Email to User
+    try {
+      const emailUser = process.env.EMAIL_USER || "garvthakral90@gmail.com";
+      const mailOptions = {
+        from: `PetBonds Support <${emailUser}>`,
+        to: user.email,
+        subject: "Action Required: Update Your PetBonds Profile Verification",
+        html: verificationRecheckTemplate(user, recheckReason),
+      };
+
+      await emailService.sendMail(mailOptions);
+      console.log(`[Recheck Email] Sent successfully to ${user.email}`);
+    } catch (emailError) {
+      console.error("[Recheck Email] Error sending email to user:", emailError);
+      // We do not fail the request if email sending fails, but log it
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification recheck requested and email sent to user",
+      data: { user },
+    });
+  } catch (error) {
+    console.error("Request user recheck error:", error);
     return res.status(500).json({
       success: false,
       error: { message: "Internal server error" },
@@ -470,6 +538,7 @@ module.exports = {
   getUserDetailsController,
   getUserPetsController,
   verifyUserController,
+  requestUserRecheckController,
   deleteUserController,
   getAllPetsController,
   getPetDetailsController,
