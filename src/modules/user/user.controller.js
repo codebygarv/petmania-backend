@@ -236,12 +236,13 @@ const googleAuthCallbackController = async (req, res) => {
     : "petmania://google-auth";
 
   try {
-    const { code, error } = req.query;
+    const { code, error, error_description } = req.query;
 
     if (error || !code) {
-      console.error("[Google OAuth Callback] Error query received:", error || "No code");
+      console.error("[Google OAuth Callback] Error query received:", error, error_description);
+      const errMsg = error_description || error || "Authorization code missing";
       const separator = returnBase.includes("#") ? "&" : "#";
-      return res.redirect(302, `${returnBase}${separator}error=${encodeURIComponent(error || "Authorization code missing")}`);
+      return res.redirect(302, `${returnBase}${separator}error=${encodeURIComponent(errMsg)}`);
     }
 
     const clientId =
@@ -253,6 +254,8 @@ const googleAuthCallbackController = async (req, res) => {
       process.env.GOOGLE_CLIENT_SECRET ||
       "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";
     const redirectUri = "https://petmania-backend-delta.vercel.app/api/user/auth/google/callback";
+
+    console.log("[Google OAuth Callback] Exchanging code with client_id:", clientId);
 
     // 1. Exchange authorization code for Google access token
     const tokenResponse = await axios.post(
@@ -325,9 +328,13 @@ const googleAuthCallbackController = async (req, res) => {
     const separator = returnBase.includes("#") ? "&" : "#";
     return res.redirect(302, `${returnBase}${separator}token=${token}&user=${userPayload}`);
   } catch (err) {
-    console.error("[Google OAuth Callback Exception]:", err?.response?.data || err.message);
+    const errorDetails =
+      err?.response?.data?.error_description ||
+      err?.response?.data?.error ||
+      err.message;
+    console.error("[Google OAuth Callback Exception]:", errorDetails, err?.response?.data);
     const separator = returnBase.includes("#") ? "&" : "#";
-    return res.redirect(302, `${returnBase}${separator}error=login_failed`);
+    return res.redirect(302, `${returnBase}${separator}error=${encodeURIComponent(errorDetails)}`);
   }
 };
 
