@@ -70,7 +70,7 @@ const adminLoginController = async (req, res) => {
 // Admin Register
 const adminRegisterController = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
     if (existingAdmin) {
@@ -85,6 +85,7 @@ const adminRegisterController = async (req, res) => {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
+      ...(role && { role }),
     });
 
     await admin.save();
